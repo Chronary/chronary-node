@@ -1,0 +1,91 @@
+name: Release Artifact
+
+# Publishes @chronary/sdk to npm and creates a GitHub Release.
+#
+# Provenance posture:
+#   - While the chronary-node repo is PRIVATE, we publish with a classic
+#     NPM_TOKEN and do NOT pass --provenance. npm's automatic provenance
+#     (via Sigstore) requires publishing from a public GitHub repo with
+#     OIDC trusted publishing, which is not available for private sources.
+#   - GitHub artifact attestations require a PUBLIC repo OR a paid plan
+#     on free orgs, so the attest step is gated on repository.visibility.
+#     It auto-enables once the mirror is flipped public; stays silent
+#     while private (no failure).
+#   - When chronary-node is flipped PUBLIC:
+#       1. Register this workflow on npmjs.com as a trusted publisher
+#          for @chronary/sdk.
+#       2. Remove NPM_TOKEN usage and the secret.
+#       3. Replace the publish step with OIDC trusted publishing and
+#          add --provenance so npm records a Sigstore attestation.
+#       4. The visibility-gated attest step starts firing automatically.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4.1.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Validate release manifest
+        id: manifest
+        run: |
+          node -e "const fs=require('fs'); const manifest=JSON.parse(fs.readFileSync('.chronary-release.json','utf8')); if (manifest.artifact !== 'ts-sdk') throw new Error('Expected artifact ts-sdk'); if (manifest.public_tag !== process.env.GITHUB_REF_NAME) throw new Error('Tag mismatch between manifest and workflow ref'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'publish_registry=' + String(Boolean(manifest.publish_registry)) + '\n');"
+          test -f RELEASE_NOTES.txt
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Validate package contents
+        run: |
+          test -f README.md
+          test -f LICENSE
+          test -f CHANGELOG.md
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Pack tarball
+        run: pnpm pack
+
+      - name: Attest build provenance for npm tarball
+        if: github.event.repository.visibility == 'public'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: '*.tgz'
+
+      - name: Publish to npm
+        if: steps.manifest.outputs.publish_registry == 'true'
+        run: npm publish *.tgz
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "${GITHUB_REF_NAME}" *.tgz \
+            --title "@chronary/sdk ${GITHUB_REF_NAME}" \
+            --notes-file RELEASE_NOTES.txt
