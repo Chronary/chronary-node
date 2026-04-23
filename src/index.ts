@@ -1,0 +1,150 @@
+import { CoreClient } from './client';
+import { AgentsClient } from './resources/agents';
+import { CalendarsClient } from './resources/calendars';
+import { EventsClient } from './resources/events';
+import { AvailabilityClient } from './resources/availability';
+import { WebhooksClient } from './resources/webhooks';
+import { ICalSubscriptionsClient } from './resources/ical-subscriptions';
+import { SchedulingClient } from './resources/scheduling';
+import { UsageClient } from './resources/usage';
+import { KeysClient } from './resources/keys';
+import { AgentAuthClient } from './resources/agent-auth';
+import { FeedbackClient } from './resources/feedback';
+import { PlansClient } from './resources/plans';
+import { verifySignature, constructEvent } from './webhook-verify';
+import type { ChronaryConfig } from './types';
+
+export class Chronary {
+  readonly agents: AgentsClient;
+  readonly calendars: CalendarsClient;
+  readonly events: EventsClient;
+  readonly availability: AvailabilityClient;
+  readonly webhooks: WebhooksClient;
+  readonly icalSubscriptions: ICalSubscriptionsClient;
+  readonly scheduling: SchedulingClient;
+  readonly usage: UsageClient;
+  readonly keys: KeysClient;
+  readonly agentAuth: AgentAuthClient;
+  readonly feedback: FeedbackClient;
+  readonly plans: PlansClient;
+
+  constructor(config?: ChronaryConfig) {
+    const client = new CoreClient(config);
+    this.agents = new AgentsClient(client);
+    this.calendars = new CalendarsClient(client);
+    this.events = new EventsClient(client);
+    this.availability = new AvailabilityClient(client);
+    this.webhooks = new WebhooksClient(client);
+    this.icalSubscriptions = new ICalSubscriptionsClient(client);
+    this.scheduling = new SchedulingClient(client);
+    this.usage = new UsageClient(client);
+    this.keys = new KeysClient(client);
+    this.agentAuth = new AgentAuthClient(client);
+    this.feedback = new FeedbackClient(client);
+    this.plans = new PlansClient(client);
+  }
+
+  static webhooks = {
+    verifySignature,
+    constructEvent,
+  };
+}
+
+// Re-export everything
+export { CoreClient } from './client';
+export { APIPromise } from './api-promise';
+export type { RawResponse, WithResponse } from './api-promise';
+export { PageIterator } from './pagination';
+export { verifySignature, constructEvent } from './webhook-verify';
+export { VERSION } from './version';
+export { isAgentSignUpNewOrg } from './resources/agent-auth';
+
+export {
+  ChronaryError,
+  AuthenticationError,
+  RateLimitError,
+  NotFoundError,
+  ValidationError,
+  QuotaExceededError,
+  TimeoutError,
+  ConnectionError,
+} from './error';
+
+export type {
+  ChronaryConfig,
+  LogLevel,
+  AppInfo,
+  RequestOptions,
+  PageResponse,
+  Page,
+  Agent,
+  CreateAgentParams,
+  UpdateAgentParams,
+  ListAgentsParams,
+  Calendar,
+  CreateCalendarParams,
+  UpdateCalendarParams,
+  ListCalendarsParams,
+  CalendarContext,
+  AgentStatus,
+  AvailabilityRules,
+  SetAvailabilityRulesParams,
+  WorkingHours,
+  WorkingHoursDay,
+  CalendarEvent,
+  CreateEventParams,
+  UpdateEventParams,
+  ListEventsParams,
+  SlotDuration,
+  AvailabilitySlot,
+  BusyBlock,
+  AvailabilityParams,
+  CrossAgentAvailabilityParams,
+  AvailabilityResponse,
+  Webhook,
+  CreateWebhookParams,
+  UpdateWebhookParams,
+  ListWebhooksParams,
+  WebhookDelivery,
+  WebhookDeliveryStats,
+  WebhookDeliveryListResponse,
+  ListWebhookDeliveriesParams,
+  ICalSubscription,
+  CreateICalSubscriptionParams,
+  UpdateICalSubscriptionParams,
+  ListICalSubscriptionsParams,
+  Proposal,
+  ProposalSummary,
+  ProposalSlot,
+  ProposalResponse,
+  ProposalStatus,
+  ProposalResponseAction,
+  CreateProposalParams,
+  RespondToProposalParams,
+  ListProposalsParams,
+  ResolveProposalResponse,
+  CancelProposalResponse,
+  Usage,
+  UsageMetric,
+  ScopedApiKey,
+  CreatedScopedApiKey,
+  CreateScopedApiKeyParams,
+  AgentSignUpParams,
+  AgentSignUpResponse,
+  AgentSignUpNewOrgResponse,
+  AgentSignUpExistingOrgResponse,
+  AgentVerifyParams,
+  AgentVerifyResponse,
+  FeedbackType,
+  SubmitFeedbackParams,
+  FeedbackAcceptedResponse,
+  PlanId,
+  PlanLimits,
+  Plan,
+  PlansListResponse,
+  WebhookEventType,
+  WebhookEvent,
+  VerifyOptions,
+} from './types';
+
+export default Chronary;
