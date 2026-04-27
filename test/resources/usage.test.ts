@@ -13,6 +13,7 @@ const USAGE = {
   webhooks: { used: 10, limit: 10000 },
   availability_queries: { used: 5, limit: 10000 },
   ical_subscriptions: { used: 1, limit: 3 },
+  proposals: { used: 18, limit: 500 },
 };
 
 describe('UsageClient', () => {
@@ -24,6 +25,8 @@ describe('UsageClient', () => {
     expect(result.plan).toBe('free');
     expect(result.agents.used).toBe(2);
     expect(result.agents.limit).toBe(5);
+    expect(result.proposals.used).toBe(18);
+    expect(result.proposals.limit).toBe(500);
     expect(fetch.mock.calls[0][0]).toContain('/v1/usage');
   });
 });

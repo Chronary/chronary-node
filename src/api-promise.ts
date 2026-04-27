@@ -13,10 +13,31 @@
  * console.log(response.headers.get('x-request-id'));
  * ```
  */
+/**
+ * Parsed quota snapshot from the IETF `RateLimit` / `RateLimit-Policy` headers
+ * (draft-ietf-httpapi-ratelimit-headers). Present on responses from endpoints
+ * that enforce quotas (most authenticated routes); absent on unauthenticated
+ * or unlimited-plan responses.
+ */
+export interface QuotaSnapshot {
+  /** Configured ceiling (e.g. `1_000_000` API calls/month). Parsed from `RateLimit-Policy`. */
+  limit: number;
+  /** Remaining quota in the current window. Parsed from `RateLimit`. */
+  remaining: number;
+  /** Wall-clock time when the window resets. Computed from the `t=` delta-seconds in `RateLimit`. */
+  resetAt: Date;
+}
+
 export interface RawResponse {
   status: number;
   headers: Headers;
   url: string;
+  /**
+   * Typed view of the IETF RateLimit headers when present. Use this instead of
+   * parsing `headers.get('ratelimit')` yourself. `undefined` for responses
+   * that don't emit quota headers (public endpoints, unlimited plans).
+   */
+  quota?: QuotaSnapshot;
 }
 
 export interface WithResponse<T> {

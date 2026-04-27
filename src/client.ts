@@ -10,7 +10,7 @@ import {
   ConnectionError,
 } from './error';
 import { APIPromise } from './api-promise';
-import type { RawResponse } from './api-promise';
+import type { QuotaSnapshot, RawResponse } from './api-promise';
 import type { ChronaryConfig, LogLevel, RequestOptions, ApiErrorBody } from './types';
 
 const DEFAULT_BASE_URL = 'https://api.chronary.ai';
@@ -168,6 +168,7 @@ export class CoreClient {
             status: response.status,
             headers: response.headers,
             url: response.url,
+            quota: parseQuotaSnapshot(response.headers),
           };
           if (response.status === 204) {
             return { data: undefined as T, rawResponse };
@@ -265,4 +266,41 @@ export class CoreClient {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Parse the IETF structured-field `RateLimit` and `RateLimit-Policy` headers
+ * (draft-ietf-httpapi-ratelimit-headers). Returns `undefined` if either header
+ * is missing or unparseable — callers can still reach the raw header strings
+ * via `response.headers`.
+ *
+ * `RateLimit` value example: `"quota";r=985477;t=187200`
+ * `RateLimit-Policy` value example: `"quota";q=1000000;w=2592000;pk=org_abc`
+ */
+function parseQuotaSnapshot(headers: Headers): QuotaSnapshot | undefined {
+  const rateLimit = headers.get('ratelimit');
+  const policy = headers.get('ratelimit-policy');
+  if (!rateLimit || !policy) return undefined;
+
+  const remaining = parseStructuredParam(rateLimit, 'r');
+  const resetSeconds = parseStructuredParam(rateLimit, 't');
+  const limit = parseStructuredParam(policy, 'q');
+  if (remaining === undefined || resetSeconds === undefined || limit === undefined) {
+    return undefined;
+  }
+
+  return {
+    limit,
+    remaining,
+    resetAt: new Date(Date.now() + resetSeconds * 1000),
+  };
+}
+
+function parseStructuredParam(header: string, key: string): number | undefined {
+  // Match `;<key>=<digits>` — guards against partial matches inside other tokens.
+  const re = new RegExp(`(?:^|;)\\s*${key}=(-?\\d+)(?:;|$)`);
+  const match = re.exec(header);
+  if (!match) return undefined;
+  const n = Number(match[1]);
+  return Number.isFinite(n) ? n : undefined;
 }

@@ -104,4 +104,81 @@ describe('APIPromise', () => {
     expect(typeof result.catch).toBe('function');
     expect(typeof result.finally).toBe('function');
   });
+
+  describe('typed quota snapshot (RawResponse.quota)', () => {
+    it('parses IETF RateLimit + RateLimit-Policy headers into quota snapshot', async () => {
+      const fetch = mockFetch([{
+        status: 200,
+        body: { data: [] },
+        headers: {
+          'RateLimit-Policy': '"quota";q=1000000;w=2592000;pk=org_abc',
+          'RateLimit': '"quota";r=985477;t=187200',
+        },
+      }]);
+      const client = new CoreClient(clientConfig(fetch));
+
+      const before = Date.now();
+      const { response } = await client.request('GET', '/v1/agents').withResponse();
+      const after = Date.now();
+
+      expect(response.quota).toBeDefined();
+      expect(response.quota?.limit).toBe(1_000_000);
+      expect(response.quota?.remaining).toBe(985_477);
+      // resetAt is now + 187200 seconds (well within a tight clock skew band).
+      const expectedReset = before + 187_200 * 1000;
+      expect(response.quota?.resetAt.getTime()).toBeGreaterThanOrEqual(expectedReset);
+      expect(response.quota?.resetAt.getTime()).toBeLessThanOrEqual(after + 187_200 * 1000);
+    });
+
+    it('omits quota snapshot when RateLimit headers are absent (public endpoints)', async () => {
+      const fetch = mockFetch([{ status: 200, body: { plans: [] } }]);
+      const client = new CoreClient(clientConfig(fetch));
+
+      const { response } = await client.request('GET', '/v1/plans').withResponse();
+      expect(response.quota).toBeUndefined();
+    });
+
+    it('omits quota snapshot when only RateLimit is present without RateLimit-Policy', async () => {
+      const fetch = mockFetch([{
+        status: 200,
+        body: { data: [] },
+        headers: { 'RateLimit': '"quota";r=100;t=60' },
+      }]);
+      const client = new CoreClient(clientConfig(fetch));
+
+      const { response } = await client.request('GET', '/v1/agents').withResponse();
+      expect(response.quota).toBeUndefined();
+    });
+
+    it('omits quota snapshot when structured params are unparseable', async () => {
+      const fetch = mockFetch([{
+        status: 200,
+        body: { data: [] },
+        headers: {
+          'RateLimit-Policy': 'malformed-without-q',
+          'RateLimit': '"quota";r=10;t=60',
+        },
+      }]);
+      const client = new CoreClient(clientConfig(fetch));
+
+      const { response } = await client.request('GET', '/v1/agents').withResponse();
+      expect(response.quota).toBeUndefined();
+    });
+
+    it('exposes raw RateLimit header strings as a fallback', async () => {
+      const fetch = mockFetch([{
+        status: 200,
+        body: { data: [] },
+        headers: {
+          'RateLimit-Policy': '"quota";q=500;w=86400;pk=org_x',
+          'RateLimit': '"quota";r=499;t=3600',
+        },
+      }]);
+      const client = new CoreClient(clientConfig(fetch));
+
+      const { response } = await client.request('GET', '/v1/agents').withResponse();
+      expect(response.headers.get('ratelimit')).toContain('r=499');
+      expect(response.headers.get('ratelimit-policy')).toContain('q=500');
+    });
+  });
 });

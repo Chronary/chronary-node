@@ -479,6 +479,7 @@ export interface Usage {
   webhooks: UsageMetric;
   availability_queries: UsageMetric;
   ical_subscriptions: UsageMetric;
+  proposals: UsageMetric;
 }
 
 // ── Plans (public catalog) ──────────────────────────────────────
@@ -614,4 +615,47 @@ export interface WebhookEvent {
 
 export interface VerifyOptions {
   tolerance?: number;
+}
+
+// ── Data export (#17) ──────────────────────────────────────────
+
+/**
+ * Response shape for `GET /v1/auth/export` (GDPR Art. 15 + 20 portability).
+ * Encrypted fields (event titles/descriptions, iCal URLs, webhook secrets)
+ * are returned in plaintext. Sensitive fields (key hashes, password hashes,
+ * OTP hashes, claim revocation tokens, internal scheduling state) are omitted.
+ */
+export interface DataExport {
+  exported_at: string;
+  format_version: '1';
+  org: {
+    id: string;
+    name: string;
+    email: string;
+    plan: string;
+    signup_source: string;
+    status: string;
+    oauth_provider: string | null;
+    oauth_provider_id: string | null;
+    email_verified: boolean;
+    onboarding_completed_at: string | null;
+    accepted_terms_version: string | null;
+    accepted_terms_at: string | null;
+    created_at: string;
+    updated_at: string;
+  };
+  agents: unknown[];
+  calendars: unknown[];
+  events: unknown[];
+  availability_rules: unknown[];
+  ical_subscriptions: unknown[];
+  webhook_subscriptions: unknown[];
+  api_keys: unknown[];
+  scheduling_proposals: unknown[];
+  proposal_slots: unknown[];
+  proposal_responses: unknown[];
+  usage_records: unknown[];
+  quota_counters: unknown[];
+  tos_acceptances: unknown[];
+  account_claims_initiated: unknown[];
 }

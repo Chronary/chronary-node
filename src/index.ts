@@ -11,6 +11,7 @@ import { KeysClient } from './resources/keys';
 import { AgentAuthClient } from './resources/agent-auth';
 import { FeedbackClient } from './resources/feedback';
 import { PlansClient } from './resources/plans';
+import { AccountClient } from './resources/account';
 import { verifySignature, constructEvent } from './webhook-verify';
 import type { ChronaryConfig } from './types';
 
@@ -27,6 +28,7 @@ export class Chronary {
   readonly agentAuth: AgentAuthClient;
   readonly feedback: FeedbackClient;
   readonly plans: PlansClient;
+  readonly account: AccountClient;
 
   constructor(config?: ChronaryConfig) {
     const client = new CoreClient(config);
@@ -42,6 +44,7 @@ export class Chronary {
     this.agentAuth = new AgentAuthClient(client);
     this.feedback = new FeedbackClient(client);
     this.plans = new PlansClient(client);
+    this.account = new AccountClient(client);
   }
 
   static webhooks = {
@@ -53,7 +56,7 @@ export class Chronary {
 // Re-export everything
 export { CoreClient } from './client';
 export { APIPromise } from './api-promise';
-export type { RawResponse, WithResponse } from './api-promise';
+export type { QuotaSnapshot, RawResponse, WithResponse } from './api-promise';
 export { PageIterator } from './pagination';
 export { verifySignature, constructEvent } from './webhook-verify';
 export { VERSION } from './version';
@@ -145,6 +148,7 @@ export type {
   WebhookEventType,
   WebhookEvent,
   VerifyOptions,
+  DataExport,
 } from './types';
 
 export default Chronary;
