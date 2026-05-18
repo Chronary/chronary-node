@@ -10,7 +10,6 @@ const PROPOSAL_SUMMARY = {
   participant_agent_ids: ['agt_a', 'agt_b'],
   calendar_id: 'cal_team',
   status: 'pending',
-  is_test: false,
   expires_at: null,
   resolved_slot: null,
   created_event_id: null,

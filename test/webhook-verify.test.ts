@@ -18,7 +18,7 @@ async function sign(secret: string, timestamp: string, payload: string): Promise
 
 describe('Webhook verification', () => {
   const secret = 'whsec_abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678';
-  const payload = JSON.stringify({ type: 'event.created', data: { event: { id: 'evt_1' } } });
+  const payload = JSON.stringify({ event: { id: 'evt_1' } });
   const nowSec = Math.floor(Date.now() / 1000);
   const timestamp = String(nowSec);
 
@@ -90,15 +90,42 @@ describe('Webhook verification', () => {
 
   it('constructEvent returns parsed event', async () => {
     const signature = await sign(secret, timestamp, payload);
-    const headers = { 'X-Signature': signature, 'X-Timestamp': timestamp };
+    const headers = {
+      'X-Signature': signature,
+      'X-Timestamp': timestamp,
+      'X-Chronary-Event-Type': 'event.created',
+    };
 
     const event = await constructEvent(payload, headers, secret);
     expect(event.type).toBe('event.created');
-    expect(event.data).toBeDefined();
+    expect(event.data).toEqual({ event: { id: 'evt_1' } });
+  });
+
+  it('constructEvent reads event type from Headers object', async () => {
+    const signature = await sign(secret, timestamp, payload);
+    const headers = new Headers({
+      'x-signature': signature,
+      'x-timestamp': timestamp,
+      'x-chronary-event-type': 'event.created',
+    });
+
+    const event = await constructEvent(payload, headers, secret);
+    expect(event).toEqual({ type: 'event.created', data: { event: { id: 'evt_1' } } });
+  });
+
+  it('constructEvent rejects missing event-type header', async () => {
+    const signature = await sign(secret, timestamp, payload);
+    const headers = { 'X-Signature': signature, 'X-Timestamp': timestamp };
+
+    await expect(constructEvent(payload, headers, secret)).rejects.toThrow('Missing X-Chronary-Event-Type');
   });
 
   it('constructEvent rejects invalid signature', async () => {
-    const headers = { 'X-Signature': 'sha256=bad', 'X-Timestamp': timestamp };
+    const headers = {
+      'X-Signature': 'sha256=bad',
+      'X-Timestamp': timestamp,
+      'X-Chronary-Event-Type': 'event.created',
+    };
 
     await expect(constructEvent(payload, headers, secret)).rejects.toThrow(ChronaryError);
   });
@@ -112,7 +139,11 @@ describe('Webhook verification', () => {
 
   it('static Chronary.webhooks.constructEvent works', async () => {
     const signature = await sign(secret, timestamp, payload);
-    const headers = { 'X-Signature': signature, 'X-Timestamp': timestamp };
+    const headers = {
+      'X-Signature': signature,
+      'X-Timestamp': timestamp,
+      'X-Chronary-Event-Type': 'event.created',
+    };
 
     const event = await Chronary.webhooks.constructEvent(payload, headers, secret);
     expect(event.type).toBe('event.created');

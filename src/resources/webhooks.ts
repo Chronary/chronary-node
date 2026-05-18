@@ -23,7 +23,7 @@ export class WebhooksClient {
   }
 
   list(params: ListWebhooksParams = {}): PageIterator<Webhook> {
-    const { limit = 20, ...filters } = params;
+    const { limit = 20, offset = 0, ...filters } = params;
     return new PageIterator<Webhook>(
       (offset, l) =>
         this.client.request<PageResponse<Webhook>>('GET', '/v1/webhooks', undefined, {
@@ -32,6 +32,7 @@ export class WebhooksClient {
           offset,
         }),
       limit,
+      offset,
     );
   }
 

@@ -6,8 +6,7 @@ import { mockFetch, clientConfig } from '../helpers';
 const NEW_ORG_RESPONSE = {
   org_id: 'org_abc123',
   agent_id: 'agt_abc123',
-  api_key: 'chr_sk_live_restricted_abc',
-  test_api_key: 'chr_sk_test_abc',
+  api_key: 'chr_sk_restricted_abc',
   message: 'Verification code sent to email',
 };
 
@@ -30,9 +29,8 @@ describe('AgentAuthClient', () => {
       expect(result).toEqual(NEW_ORG_RESPONSE);
       expect(isAgentSignUpNewOrg(result)).toBe(true);
       if (isAgentSignUpNewOrg(result)) {
-        // Type-narrowed end-to-end; these fields are only reachable on the new-org branch.
-        expect(result.api_key).toBe('chr_sk_live_restricted_abc');
-        expect(result.test_api_key).toBe('chr_sk_test_abc');
+        // Type-narrowed end-to-end; this field is only reachable on the new-org branch.
+        expect(result.api_key).toBe('chr_sk_restricted_abc');
       }
 
       const [url, init] = fetch.mock.calls[0];
@@ -123,7 +121,7 @@ describe('AgentAuthClient', () => {
         { status: 200, body: { verified: true, message: 'Full access unlocked' } },
       ]);
       const client = new Chronary({
-        apiKey: 'chr_sk_live_restricted_abc',
+        apiKey: 'chr_sk_restricted_abc',
         baseUrl: 'https://api.test.chronary.ai',
         fetch,
         maxRetries: 0,
@@ -138,7 +136,7 @@ describe('AgentAuthClient', () => {
       expect(url).toBe('https://api.test.chronary.ai/v1/agent/verify');
       expect(init?.method).toBe('POST');
       const headers = init?.headers as Record<string, string>;
-      expect(headers.Authorization).toBe('Bearer chr_sk_live_restricted_abc');
+      expect(headers.Authorization).toBe('Bearer chr_sk_restricted_abc');
       expect(JSON.parse(init?.body as string)).toEqual({ otp: '123456' });
     });
 

@@ -23,7 +23,7 @@ export class SchedulingClient {
   }
 
   list(params: ListProposalsParams = {}): PageIterator<ProposalSummary> {
-    const { limit = 50, ...filters } = params;
+    const { limit = 50, offset = 0, ...filters } = params;
     return new PageIterator<ProposalSummary>(
       (offset, l) =>
         this.client.request<PageResponse<ProposalSummary>>(
@@ -31,6 +31,7 @@ export class SchedulingClient {
           { ...filters, limit: l, offset },
         ),
       limit,
+      offset,
     );
   }
 

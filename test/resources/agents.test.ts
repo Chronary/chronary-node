@@ -63,6 +63,21 @@ describe('AgentsClient', () => {
     expect(url).toContain('limit=10');
   });
 
+  it('list starts iteration at the supplied offset', async () => {
+    const fetch = mockFetch([
+      { status: 200, body: { data: [AGENT], total: 11, limit: 10, offset: 10 } },
+    ]);
+    const client = new Chronary(clientConfig(fetch));
+
+    for await (const _ of client.agents.list({ limit: 10, offset: 10 })) {
+      // consume
+    }
+
+    const url = fetch.mock.calls[0][0] as string;
+    expect(url).toContain('limit=10');
+    expect(url).toContain('offset=10');
+  });
+
   it('list getPage', async () => {
     const fetch = mockFetch([
       { status: 200, body: { data: [AGENT], total: 3, limit: 1, offset: 0 } },

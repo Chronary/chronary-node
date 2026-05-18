@@ -25,7 +25,7 @@ export class ICalSubscriptionsClient {
   }
 
   list(params: ListICalSubscriptionsParams & { agentId: string }): PageIterator<ICalSubscription> {
-    const { agentId, limit = 50, ...filters } = params;
+    const { agentId, limit = 50, offset = 0, ...filters } = params;
     return new PageIterator<ICalSubscription>(
       (offset, l) =>
         this.client.request<PageResponse<ICalSubscription>>(
@@ -33,6 +33,7 @@ export class ICalSubscriptionsClient {
           { ...filters, limit: l, offset },
         ),
       limit,
+      offset,
     );
   }
 

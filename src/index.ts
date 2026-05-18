@@ -7,8 +7,10 @@ import { WebhooksClient } from './resources/webhooks';
 import { ICalSubscriptionsClient } from './resources/ical-subscriptions';
 import { SchedulingClient } from './resources/scheduling';
 import { UsageClient } from './resources/usage';
+import { AuditLogClient } from './resources/audit-log';
 import { KeysClient } from './resources/keys';
 import { AgentAuthClient } from './resources/agent-auth';
+import { WaitlistClient } from './resources/waitlist';
 import { FeedbackClient } from './resources/feedback';
 import { PlansClient } from './resources/plans';
 import { AccountClient } from './resources/account';
@@ -24,8 +26,10 @@ export class Chronary {
   readonly icalSubscriptions: ICalSubscriptionsClient;
   readonly scheduling: SchedulingClient;
   readonly usage: UsageClient;
+  readonly auditLog: AuditLogClient;
   readonly keys: KeysClient;
   readonly agentAuth: AgentAuthClient;
+  readonly waitlist: WaitlistClient;
   readonly feedback: FeedbackClient;
   readonly plans: PlansClient;
   readonly account: AccountClient;
@@ -40,8 +44,10 @@ export class Chronary {
     this.icalSubscriptions = new ICalSubscriptionsClient(client);
     this.scheduling = new SchedulingClient(client);
     this.usage = new UsageClient(client);
+    this.auditLog = new AuditLogClient(client);
     this.keys = new KeysClient(client);
     this.agentAuth = new AgentAuthClient(client);
+    this.waitlist = new WaitlistClient(client);
     this.feedback = new FeedbackClient(client);
     this.plans = new PlansClient(client);
     this.account = new AccountClient(client);
@@ -129,6 +135,9 @@ export type {
   CancelProposalResponse,
   Usage,
   UsageMetric,
+  AuditLogEntry,
+  ListAuditLogParams,
+  AuditLogResponse,
   ScopedApiKey,
   CreatedScopedApiKey,
   CreateScopedApiKeyParams,
@@ -138,6 +147,9 @@ export type {
   AgentSignUpExistingOrgResponse,
   AgentVerifyParams,
   AgentVerifyResponse,
+  WaitlistJoinParams,
+  WaitlistJoinResponse,
+  WaitlistedOrg,
   FeedbackType,
   SubmitFeedbackParams,
   FeedbackAcceptedResponse,

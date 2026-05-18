@@ -102,4 +102,37 @@ describe('PageIterator', () => {
 
     expect(fetchPage).toHaveBeenCalledWith(0, 10);
   });
+
+  it('starts iteration at the configured initial offset', async () => {
+    const fetchPage = vi.fn(async (offset: number, limit: number): Promise<PageResponse<number>> => ({
+      data: offset === 10 ? [11, 12] : [13],
+      total: 13,
+      limit,
+      offset,
+    }));
+
+    const iter = new PageIterator(fetchPage, 2, 10);
+    const items: number[] = [];
+    for await (const item of iter) {
+      items.push(item);
+    }
+
+    expect(items).toEqual([11, 12, 13]);
+    expect(fetchPage).toHaveBeenNthCalledWith(1, 10, 2);
+    expect(fetchPage).toHaveBeenNthCalledWith(2, 12, 2);
+  });
+
+  it('uses the configured initial offset for getPage by default', async () => {
+    const fetchPage = vi.fn(async (offset: number, limit: number): Promise<PageResponse<number>> => ({
+      data: [offset],
+      total: 20,
+      limit,
+      offset,
+    }));
+
+    const iter = new PageIterator(fetchPage, 5, 10);
+    await iter.getPage();
+
+    expect(fetchPage).toHaveBeenCalledWith(10, 5);
+  });
 });

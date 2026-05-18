@@ -26,7 +26,7 @@ export class CalendarsClient {
   }
 
   list(params: ListCalendarsParams = {}): PageIterator<Calendar> {
-    const { agentId, limit = 50, ...filters } = params;
+    const { agentId, limit = 50, offset = 0, ...filters } = params;
     const path = agentId ? `/v1/agents/${agentId}/calendars` : '/v1/calendars';
     return new PageIterator<Calendar>(
       (offset, l) =>
@@ -36,6 +36,7 @@ export class CalendarsClient {
           offset,
         }),
       limit,
+      offset,
     );
   }
 

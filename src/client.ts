@@ -56,6 +56,7 @@ export class CoreClient {
   private readonly logLevel: LogLevel;
   private readonly fetchFn: typeof globalThis.fetch;
   private readonly userAgent: string;
+  private readonly extraHeaders: Record<string, string>;
 
   constructor(config: ChronaryConfig = {}) {
     // apiKey is optional at construction — some endpoints (agentAuth.signUp,
@@ -69,8 +70,9 @@ export class CoreClient {
     this.maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.logLevel = resolveLogLevel(config);
     this.fetchFn = config.fetch ?? globalThis.fetch.bind(globalThis);
+    this.extraHeaders = config.extraHeaders ?? {};
 
-    let ua = `chronary-sdk/${VERSION}`;
+    let ua = `chronary-ts/${VERSION}`;
     if (config.appInfo) {
       ua += ` ${config.appInfo.name}`;
       if (config.appInfo.version) ua += `/${config.appInfo.version}`;
@@ -117,6 +119,7 @@ export class CoreClient {
     const headers: Record<string, string> = {
       'User-Agent': this.userAgent,
       'X-Chronary-SDK-Version': VERSION,
+      ...this.extraHeaders,
     };
     if (this.apiKey) {
       headers['Authorization'] = `Bearer ${this.apiKey}`;
@@ -140,9 +143,11 @@ export class CoreClient {
         await sleep(delay);
       }
 
+      if (options?.signal?.aborted) throw new ChronaryError('Request aborted', 0);
+
       const controller = new AbortController();
-      const signals = [controller.signal];
-      if (options?.signal) signals.push(options.signal);
+      const abortFromCaller = () => controller.abort(options?.signal?.reason);
+      options?.signal?.addEventListener('abort', abortFromCaller, { once: true });
 
       const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
@@ -158,6 +163,7 @@ export class CoreClient {
         });
 
         clearTimeout(timeoutId);
+        options?.signal?.removeEventListener('abort', abortFromCaller);
         const elapsed = Date.now() - startTime;
         const requestId = response.headers.get('x-request-id') ?? undefined;
 
@@ -186,6 +192,7 @@ export class CoreClient {
         throw await this.buildError(response, requestId);
       } catch (err) {
         clearTimeout(timeoutId);
+        options?.signal?.removeEventListener('abort', abortFromCaller);
 
         if (err instanceof ChronaryError) throw err;
 
@@ -231,6 +238,11 @@ export class CoreClient {
     const errorType = errorBody?.error?.type;
 
     switch (response.status) {
+      case 400:
+        if (errorType === 'validation_error') {
+          return new ValidationError(message, response.status, rid, response.headers);
+        }
+        return new ChronaryError(message, response.status, rid, response.headers, errorType);
       case 401:
         return new AuthenticationError(message, rid, response.headers);
       case 402:

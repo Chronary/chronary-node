@@ -25,7 +25,7 @@ export class EventsClient {
   }
 
   list(params: ListEventsParams = {}): PageIterator<CalendarEvent> {
-    const { calendarId, agentId, limit = 50, ...filters } = params;
+    const { calendarId, agentId, limit = 50, offset = 0, ...filters } = params;
 
     let path: string;
     if (agentId) {
@@ -44,6 +44,7 @@ export class EventsClient {
           offset,
         }),
       limit,
+      offset,
     );
   }
 

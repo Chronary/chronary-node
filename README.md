@@ -62,7 +62,8 @@ If `apiKey` is omitted, the SDK will also check `process.env.CHRONARY_API_KEY`.
 ```ts
 import { Chronary } from '@chronary/sdk';
 
-const event = Chronary.webhooks.constructEvent(payload, signature, secret);
+const event = await Chronary.webhooks.constructEvent(rawBody, headers, secret);
+// event.type comes from X-Chronary-Event-Type; event.data is the parsed payload body.
 ```
 
 ## License

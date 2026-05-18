@@ -18,10 +18,9 @@ export class AgentAuthClient {
    * with no `apiKey` to invoke this method.
    *
    * The response is a discriminated union:
-   *   - **New org path** — returns `org_id`, `agent_id`, `api_key`, and
-   *     `test_api_key`. The live `api_key` is restricted to the verify
-   *     endpoint until the OTP is submitted successfully; after verification
-   *     it unlocks the full API. The `test_api_key` works immediately.
+   *   - **New org path** — returns `org_id`, `agent_id`, and `api_key`.
+   *     The `api_key` is restricted to the verify endpoint until the OTP
+   *     is submitted successfully; after verification it unlocks the full API.
    *   - **Existing-org dedup** — returns only `message`. No credentials are
    *     leaked when the email matches an existing org (enumeration defense).
    *
@@ -45,7 +44,7 @@ export class AgentAuthClient {
   }
 
   /**
-   * Submit the OTP sent during `signUp()` to unlock the live API key.
+   * Submit the OTP sent during `signUp()` to unlock the API key.
    *
    * Must be invoked on a `Chronary` client constructed with the restricted
    * `api_key` returned by `signUp()` — NOT on the client that issued

@@ -3,16 +3,19 @@ import type { PageResponse, Page } from './types';
 export class PageIterator<T> implements AsyncIterable<T> {
   private readonly fetchPage: (offset: number, limit: number) => PromiseLike<PageResponse<T>>;
   private readonly defaultLimit: number;
+  private readonly initialOffset: number;
 
   constructor(
     fetchPage: (offset: number, limit: number) => PromiseLike<PageResponse<T>>,
     defaultLimit: number = 50,
+    initialOffset: number = 0,
   ) {
     this.fetchPage = fetchPage;
     this.defaultLimit = defaultLimit;
+    this.initialOffset = initialOffset;
   }
 
-  async getPage(offset: number = 0, limit?: number): Promise<Page<T>> {
+  async getPage(offset: number = this.initialOffset, limit?: number): Promise<Page<T>> {
     const l = limit ?? this.defaultLimit;
     const response = await this.fetchPage(offset, l);
     return {
@@ -22,7 +25,7 @@ export class PageIterator<T> implements AsyncIterable<T> {
   }
 
   async *[Symbol.asyncIterator](): AsyncIterableIterator<T> {
-    let offset = 0;
+    let offset = this.initialOffset;
     const limit = this.defaultLimit;
 
     while (true) {

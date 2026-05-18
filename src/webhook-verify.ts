@@ -33,10 +33,23 @@ function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+function getHeader(headers: Headers | Record<string, string>, name: string): string | null {
+  if (headers instanceof Headers) return headers.get(name);
+
+  const record = headers as Record<string, string>;
+  const direct = record[name] ?? record[name.toLowerCase()];
+  if (direct !== undefined) return direct;
+
+  const lowerName = name.toLowerCase();
+  for (const [key, value] of Object.entries(record)) {
+    if (key.toLowerCase() === lowerName) return value;
+  }
+  return null;
+}
+
 function extractHeaders(headers: Headers | Record<string, string>): { signature: string; timestamp: string } {
   const get = (name: string): string | null => {
-    if (headers instanceof Headers) return headers.get(name);
-    return (headers as Record<string, string>)[name] ?? (headers as Record<string, string>)[name.toLowerCase()] ?? null;
+    return getHeader(headers, name);
   };
 
   const signature = get('X-Signature') ?? get('x-signature');
@@ -87,6 +100,10 @@ export async function constructEvent(
   options?: VerifyOptions,
 ): Promise<WebhookEvent> {
   await verifySignature(rawBody, headers, secret, options);
-  const parsed = JSON.parse(rawBody);
-  return parsed as WebhookEvent;
+
+  const type = getHeader(headers, 'X-Chronary-Event-Type');
+  if (!type) throw new ChronaryError('Missing X-Chronary-Event-Type header', 0);
+
+  const data = JSON.parse(rawBody);
+  return { type, data } as WebhookEvent;
 }

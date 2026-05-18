@@ -8,6 +8,13 @@ export interface ChronaryConfig {
   logLevel?: LogLevel;
   fetch?: typeof globalThis.fetch;
   appInfo?: AppInfo;
+  /**
+   * Extra headers to attach to every request. Used by wrapper packages
+   * (e.g. `chronary-mcp`) to set `X-Chronary-Client` so the API can
+   * attribute the wrapper's traffic separately from the bare TS SDK's.
+   * Header keys here override the SDK defaults — choose wisely.
+   */
+  extraHeaders?: Record<string, string>;
 }
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'off';
@@ -94,7 +101,6 @@ export interface Calendar {
   name: string;
   timezone: string;
   metadata: Record<string, unknown>;
-  isTest: boolean;
   ical_url: string;
   deletedAt: string | null;
   createdAt: string;
@@ -394,7 +400,6 @@ export interface ProposalSummary {
   participant_agent_ids: string[];
   calendar_id: string;
   status: ProposalStatus;
-  is_test: boolean;
   expires_at: string | null;
   resolved_slot: ProposalSlot | null;
   created_event_id: string | null;
@@ -446,7 +451,6 @@ export interface CancelProposalResponse {
 
 export interface ScopedApiKey {
   id: string;
-  mode: 'live' | 'test';
   key_prefix: string;
   agent_id: string;
   label: string | null;
@@ -459,13 +463,34 @@ export interface CreatedScopedApiKey extends ScopedApiKey {
 
 export interface CreateScopedApiKeyParams {
   agent_id: string;
-  mode: 'live' | 'test';
   label?: string;
 }
 
 export interface UsageMetric {
   used: number;
   limit: number | null;
+}
+
+/**
+ * Temporal-hold lifecycle counters for the current period. Informational —
+ * not gated by any plan limit. The funnel identity
+ * `created = confirmed + expired + active` holds, where `active` is derived
+ * (not stored). Counts cover all three end-of-hold paths: TTL expiry,
+ * manual release, and priority-bump.
+ */
+export interface HoldsUsage {
+  created: number;
+  confirmed: number;
+  expired: number;
+}
+
+/**
+ * Availability requests that touched more than one calendar in the current
+ * period. Informational — gated separately by the
+ * `cross_calendar_availability` capability, not by this counter.
+ */
+export interface CrossCalendarQueriesUsage {
+  used: number;
 }
 
 export interface Usage {
@@ -480,11 +505,67 @@ export interface Usage {
   availability_queries: UsageMetric;
   ical_subscriptions: UsageMetric;
   proposals: UsageMetric;
+  holds: HoldsUsage;
+  cross_calendar_queries: CrossCalendarQueriesUsage;
+}
+
+// ── Audit log (#509) ───────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  /** First 20 chars of the actor API key. Never the full key. */
+  actor_key_prefix: string | null;
+  /** Scoped-key agent ID when the actor used a chr_ak_* key. */
+  agent_id: string | null;
+  /** Entity IDs extracted from the request path (e.g. "agt_1/cal_2"). */
+  resource: string | null;
+  ip: string | null;
+  status: number;
+  method: string;
+  /** Route template with entity IDs replaced by :id placeholders. */
+  path: string;
+  duration_ms: number;
+  request_id: string | null;
+  created_at: string;
+}
+
+export interface ListAuditLogParams {
+  /** Lower bound (inclusive, ISO-8601). Clamped to the retention window. */
+  from?: string;
+  /** Upper bound (inclusive, ISO-8601). Defaults to now. */
+  to?: string;
+  /** Filter by exact action name, e.g. "agent.create". */
+  action?: string;
+  /** Filter by the first 20 chars of the actor API key. */
+  actor_key_prefix?: string;
+  /** Opaque cursor from a previous response for keyset pagination. */
+  cursor?: string;
+  /** Page size (1–200). Defaults to 50. */
+  limit?: number;
+}
+
+export interface AuditLogResponse {
+  data: AuditLogEntry[];
+  pagination: {
+    /** Opaque cursor for the next page. Null if no more results. */
+    next_cursor: string | null;
+  };
+  /**
+   * Audit-log retention window for the caller's plan (days).
+   * Null = unlimited (Custom tier, per-contract).
+   */
+  retention_days: number | null;
+  /**
+   * True when the requested `from` was outside the retention window and
+   * was clamped. Display an upgrade hint when this is true.
+   */
+  range_clamped: boolean;
 }
 
 // ── Plans (public catalog) ──────────────────────────────────────
 
-export type PlanId = 'free' | 'pro' | 'scale' | 'enterprise';
+export type PlanId = 'free' | 'pro' | 'custom';
 
 export interface PlanLimits {
   agents: number | null;
@@ -540,10 +621,8 @@ export interface AgentSignUpParams {
 export interface AgentSignUpNewOrgResponse {
   org_id: string;
   agent_id: string;
-  /** Live-mode API key. Limited to the verify endpoint until OTP succeeds. */
+  /** API key. Limited to the verify endpoint until OTP succeeds. */
   api_key: string;
-  /** Test-mode key (same org) — usable immediately without verification. */
-  test_api_key: string;
   /** Opaque confirmation — always `"Verification code sent to email"`. */
   message: string;
 }
@@ -568,6 +647,31 @@ export interface AgentVerifyParams {
 export interface AgentVerifyResponse {
   verified: true;
   /** Opaque confirmation — always `"Full access unlocked"`. */
+  message: string;
+}
+
+// ── Waitlist (#442) ─────────────────────────────────────────────
+
+export interface WaitlistJoinParams {
+  /** Email address to join the waitlist with. */
+  email: string;
+  /** Optional display name. Derived from the email's local-part if omitted. */
+  name?: string;
+  /** Optional ToS version string the caller has accepted. */
+  tos_version?: string;
+}
+
+export interface WaitlistedOrg {
+  id: string;
+  name: string;
+  email: string;
+  is_waitlisted: true;
+  waitlisted_at: string;
+  signup_source: string;
+}
+
+export interface WaitlistJoinResponse {
+  data: WaitlistedOrg;
   message: string;
 }
 
@@ -658,4 +762,6 @@ export interface DataExport {
   quota_counters: unknown[];
   tos_acceptances: unknown[];
   account_claims_initiated: unknown[];
+  account_claims_targeting_this_org: unknown[];
+  feedback_submissions: unknown[];
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CoreClient } from '../src/client';
-import { AuthenticationError, RateLimitError, NotFoundError, TimeoutError, ConnectionError } from '../src/error';
+import { AuthenticationError, RateLimitError, NotFoundError, ValidationError, ConnectionError, ChronaryError } from '../src/error';
 import { mockFetch, clientConfig } from './helpers';
 
 describe('CoreClient', () => {
@@ -34,7 +34,7 @@ describe('CoreClient', () => {
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe('https://api.test.chronary.ai/v1/agents/agt_1');
     expect(init?.method).toBe('GET');
-    expect(init?.headers).toHaveProperty('Authorization', 'Bearer chr_sk_live_test1234567890');
+    expect(init?.headers).toHaveProperty('Authorization', 'Bearer chr_sk_test1234567890');
   });
 
   it('sends SDK version header', async () => {
@@ -43,6 +43,31 @@ describe('CoreClient', () => {
 
     await client.request('GET', '/v1/test');
     const headers = fetch.mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers['X-Chronary-SDK-Version']).toBeDefined();
+  });
+
+  it('sets User-Agent to chronary-ts/<version> so the API can attribute traffic', async () => {
+    const fetch = mockFetch([{ status: 200, body: {} }]);
+    const client = new CoreClient(clientConfig(fetch));
+
+    await client.request('GET', '/v1/test');
+    const headers = fetch.mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers['User-Agent']).toMatch(/^chronary-ts\/\d+\.\d+\.\d+/);
+  });
+
+  it('merges extraHeaders into every request (used by chronary-mcp wrapper)', async () => {
+    const fetch = mockFetch([{ status: 200, body: {} }]);
+    const client = new CoreClient({
+      ...clientConfig(fetch),
+      extraHeaders: { 'X-Chronary-Client': 'chronary-mcp/0.1.1', 'X-Custom': 'custom-value' },
+    });
+
+    await client.request('GET', '/v1/test');
+    const headers = fetch.mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers['X-Chronary-Client']).toBe('chronary-mcp/0.1.1');
+    expect(headers['X-Custom']).toBe('custom-value');
+    // SDK defaults still present
+    expect(headers['User-Agent']).toMatch(/^chronary-ts\//);
     expect(headers['X-Chronary-SDK-Version']).toBeDefined();
   });
 
@@ -73,6 +98,24 @@ describe('CoreClient', () => {
     await client.request('POST', '/v1/agents', { name: 'Bot' }, undefined, { idempotencyKey: 'my-key-123' });
     const headers = fetch.mock.calls[0][1]?.headers as Record<string, string>;
     expect(headers['Idempotency-Key']).toBe('my-key-123');
+  });
+
+  it('passes caller abort signal to fetch and reports caller aborts distinctly', async () => {
+    const fetch = vi.fn((_url: RequestInfo | URL, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      const signal = init?.signal as AbortSignal;
+      signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true });
+    })) as unknown as typeof globalThis.fetch;
+    const controller = new AbortController();
+    const client = new CoreClient({ ...clientConfig(fetch), maxRetries: 0 });
+
+    const promise = client.request('GET', '/v1/agents', undefined, undefined, { signal: controller.signal });
+    await Promise.resolve();
+    controller.abort();
+
+    await expect(promise).rejects.toThrow(ChronaryError);
+    expect(fetch).toHaveBeenCalledOnce();
+    const init = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit;
+    expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
   it('does not add idempotency key on GET', async () => {
@@ -130,6 +173,16 @@ describe('CoreClient', () => {
     const client = new CoreClient(clientConfig(fetch));
 
     await expect(client.request('GET', '/v1/agents')).rejects.toThrow(AuthenticationError);
+  });
+
+  it('throws ValidationError on API validation_error 400', async () => {
+    const fetch = mockFetch([{
+      status: 400,
+      body: { error: { type: 'validation_error', message: 'Invalid field', request_id: 'req_abc' } },
+    }]);
+    const client = new CoreClient(clientConfig(fetch));
+
+    await expect(client.request('POST', '/v1/agents', { name: '' })).rejects.toThrow(ValidationError);
   });
 
   it('throws RateLimitError on 429 with retry-after', async () => {
@@ -200,7 +253,7 @@ describe('CoreClient', () => {
   it('respects custom baseUrl', async () => {
     const fetch = mockFetch([{ status: 200, body: {} }]);
     const client = new CoreClient({
-      apiKey: 'chr_sk_live_test',
+      apiKey: 'chr_sk_test',
       baseUrl: 'https://custom.api.com/api',
       fetch,
       maxRetries: 0,
@@ -213,7 +266,7 @@ describe('CoreClient', () => {
   it('strips trailing slash from baseUrl', async () => {
     const fetch = mockFetch([{ status: 200, body: {} }]);
     const client = new CoreClient({
-      apiKey: 'chr_sk_live_test',
+      apiKey: 'chr_sk_test',
       baseUrl: 'https://api.chronary.ai/',
       fetch,
       maxRetries: 0,
