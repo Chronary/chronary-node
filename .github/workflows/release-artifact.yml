@@ -3,21 +3,25 @@ name: Release Artifact
 # Publishes @chronary/sdk to npm and creates a GitHub Release.
 #
 # Provenance posture:
-#   - While the chronary-node repo is PRIVATE, we publish with a classic
-#     NPM_TOKEN and do NOT pass --provenance. npm's automatic provenance
-#     (via Sigstore) requires publishing from a public GitHub repo with
-#     OIDC trusted publishing, which is not available for private sources.
-#   - GitHub artifact attestations require a PUBLIC repo OR a paid plan
-#     on free orgs, so the attest step is gated on repository.visibility.
-#     It auto-enables once the mirror is flipped public; stays silent
-#     while private (no failure).
-#   - When chronary-node is flipped PUBLIC:
-#       1. Register this workflow on npmjs.com as a trusted publisher
-#          for @chronary/sdk.
-#       2. Remove NPM_TOKEN usage and the secret.
-#       3. Replace the publish step with OIDC trusted publishing and
-#          add --provenance so npm records a Sigstore attestation.
-#       4. The visibility-gated attest step starts firing automatically.
+#   - Publishes via npm OIDC Trusted Publishing — no NPM_TOKEN required.
+#     The `id-token: write` permission and `registry-url` on setup-node
+#     are sufficient once chronary-node is registered as a Trusted
+#     Publisher for @chronary/sdk on npmjs.com.
+#   - npm CLI >= 11.5.1 is required for OIDC trusted publishing; we
+#     pin npm to latest before publishing because Node 22 ships with
+#     npm 10.x by default.
+#   - `npm publish --provenance` records a Sigstore attestation that
+#     links the published tarball back to this workflow run.
+#   - GitHub artifact attestations also fire on public repos via
+#     actions/attest-build-provenance.
+#
+# Prerequisites (one-time, on flip to public):
+#   1. chronary-node is public on GitHub.
+#   2. npmjs.com → @chronary org → Trusted Publishers → register
+#      repo `Chronary/chronary-node`, workflow `release-artifact.yml`,
+#      environment blank.
+#   3. NPM_TOKEN repo secret has been deleted and the legacy
+#      `chronary-node-release` npm access token revoked.
 
 on:
   push:
@@ -34,7 +38,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +49,9 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm for OIDC trusted publishing
+        run: npm install -g npm@latest
 
       - name: Validate release manifest
         id: manifest
@@ -82,7 +88,7 @@ jobs:
 
       - name: Publish to npm
         if: steps.manifest.outputs.publish_registry == 'true'
-        run: npm publish *.tgz
+        run: npm publish *.tgz --provenance --access public
 
       - name: Create GitHub Release
         run: |
