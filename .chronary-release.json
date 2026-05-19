@@ -1,9 +1,9 @@
 {
   "artifact": "ts-sdk",
-  "version": "0.1.2",
-  "public_tag": "v0.1.2",
-  "private_source_sha": "b6046c5d90cb8a7c03745d1bfa7d39057eb95a30",
-  "private_release_tag": "public-release/20260518.2-b6046c5",
-  "publish_registry": false,
-  "generated_at": "2026-05-18T07:14:35.227Z"
+  "version": "0.1.4",
+  "public_tag": "v0.1.4",
+  "private_source_sha": "bff34f8f3b2a093ae13482c9faddf237f136fdd5",
+  "private_release_tag": "public-release/20260519.1-bff34f8",
+  "publish_registry": true,
+  "generated_at": "2026-05-19T21:33:15.040Z"
 }

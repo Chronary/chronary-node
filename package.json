@@ -1,6 +1,6 @@
 {
   "name": "@chronary/sdk",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Official TypeScript SDK for the Chronary calendar-as-a-service API",
   "license": "Apache-2.0",
   "type": "module",
@@ -44,11 +44,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/chronary/chronary-node"
+    "url": "https://github.com/Chronary/chronary-node"
   },
   "homepage": "https://docs.chronary.ai",
   "bugs": {
-    "url": "https://github.com/chronary/chronary-node/issues"
+    "url": "https://github.com/Chronary/chronary-node/issues"
   },
   "scripts": {
     "build": "tsup",
