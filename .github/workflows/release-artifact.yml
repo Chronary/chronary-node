@@ -51,7 +51,14 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Upgrade npm for OIDC trusted publishing
-        run: npm install -g npm@latest
+        run: |
+          # npm install -g npm@latest fails when the runner's bundled npm is incomplete
+          # (e.g. missing promise-retry on Node 22.22+). Bypass by downloading the
+          # tarball directly into the existing module directory.
+          NPM_DIR="$(node -e "process.stdout.write(require('path').resolve(process.execPath,'../../lib/node_modules/npm'))")"
+          curl -fsSL https://registry.npmjs.org/npm/-/npm-11.5.1.tgz -o /tmp/npm.tgz
+          tar -xzf /tmp/npm.tgz --strip-components=1 -C "$NPM_DIR"
+          npm --version
 
       - name: Validate release manifest
         id: manifest
