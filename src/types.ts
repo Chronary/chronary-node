@@ -102,6 +102,8 @@ export interface Calendar {
   timezone: string;
   metadata: Record<string, unknown>;
   ical_url: string;
+  /** Default reminder offsets (minutes before start) inherited by events that don't set their own. null = system default (10 min); [] = no reminders. */
+  default_reminders: number[] | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -111,6 +113,8 @@ export interface CreateCalendarParams {
   name: string;
   timezone: string;
   agent_status?: 'idle' | 'working' | 'waiting' | 'error';
+  /** Default reminder offsets (minutes before start) for events on this calendar. null/omit = system default (10 min); [] = no reminders. */
+  default_reminders?: number[] | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -118,6 +122,7 @@ export interface UpdateCalendarParams {
   name?: string;
   timezone?: string;
   agent_status?: 'idle' | 'working' | 'waiting' | 'error';
+  default_reminders?: number[] | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -144,6 +149,8 @@ export interface CalendarEvent {
   status: EventStatus;
   source: 'internal' | 'external_ical';
   metadata: Record<string, unknown>;
+  /** Reminder offsets (minutes before start). null = inherit calendar default (then system default of 10 min); [] = no reminders. */
+  reminders: number[] | null;
   holdExpiresAt: string | null;
   holdPriority: number | null;
   deletedAt: string | null;
@@ -159,6 +166,8 @@ export interface CreateEventParams {
   all_day?: boolean;
   status?: EventStatus;
   metadata?: Record<string, unknown>;
+  /** Reminder offsets in minutes before start (e.g. [10, 1440]). Each fires an event.reminder webhook + VALARM. null/omit = inherit calendar default (then 10 min); [] = no reminders. Max 5, each 1–40320. */
+  reminders?: number[] | null;
   /** ISO 8601 timestamp. Required when status='hold'. Must be 30s-15min in the future. */
   hold_expires_at?: string;
   /** Priority for conflict resolution. Only valid with status='hold'. 0-100. */
@@ -174,6 +183,8 @@ export interface UpdateEventParams {
   /** Holds cannot be updated via PATCH — use /confirm or /release instead. */
   status?: 'confirmed' | 'tentative' | 'cancelled';
   metadata?: Record<string, unknown>;
+  /** Reminder offsets in minutes before start. null = inherit calendar default; [] = no reminders. */
+  reminders?: number[] | null;
 }
 
 export interface ListEventsParams {
@@ -701,6 +712,7 @@ export type WebhookEventType =
   | 'event.deleted'
   | 'event.started'
   | 'event.ended'
+  | 'event.reminder'
   | 'event.hold_created'
   | 'event.hold_expired'
   | 'event.hold_released'

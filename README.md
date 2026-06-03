@@ -57,6 +57,22 @@ If `apiKey` is omitted, the SDK will also check `process.env.CHRONARY_API_KEY`.
 - `client.keys`
 - `client.agentAuth`
 
+## Plans & limits
+
+Chronary enforces a per-key rate limit and per-org monthly quotas that vary by plan:
+
+| | Free | Pro |
+|---|---|---|
+| Rate limit | 10 req/s | 50 req/s |
+| Webhook delivery retries | 4 | 8 |
+| Agents | 3 | 50 |
+| Calendars | 10 | 250 |
+| Events / mo | 2,500 | 125,000 |
+| API calls / mo | 50,000 | 1,000,000 |
+| Pro-only features | — | Scheduling proposals, temporal holds, cross-calendar availability, per-agent API keys (`chr_ak_*`) |
+
+Pro-only feature calls return `403` with an upgrade hint on Free. See the full matrix and rate-limit handling guidance at <https://docs.chronary.ai/resources/rate-limits/>.
+
 ## Webhook Verification
 
 ```ts

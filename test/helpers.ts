@@ -26,7 +26,7 @@ export function clientConfig(
   overrides: Partial<ChronaryConfig> = {},
 ): ChronaryConfig {
   return {
-    apiKey: 'chr_sk_test1234567890',
+    apiKey: 'chr_sk_xxx1234567890',
     baseUrl: 'https://api.test.chronary.ai',
     fetch: fetchFn,
     maxRetries: 0,

@@ -34,7 +34,7 @@ describe('CoreClient', () => {
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe('https://api.test.chronary.ai/v1/agents/agt_1');
     expect(init?.method).toBe('GET');
-    expect(init?.headers).toHaveProperty('Authorization', 'Bearer chr_sk_test1234567890');
+    expect(init?.headers).toHaveProperty('Authorization', 'Bearer chr_sk_xxx1234567890');
   });
 
   it('sends SDK version header', async () => {
@@ -253,7 +253,7 @@ describe('CoreClient', () => {
   it('respects custom baseUrl', async () => {
     const fetch = mockFetch([{ status: 200, body: {} }]);
     const client = new CoreClient({
-      apiKey: 'chr_sk_test',
+      apiKey: 'chr_sk_xxx',
       baseUrl: 'https://custom.api.com/api',
       fetch,
       maxRetries: 0,
@@ -266,7 +266,7 @@ describe('CoreClient', () => {
   it('strips trailing slash from baseUrl', async () => {
     const fetch = mockFetch([{ status: 200, body: {} }]);
     const client = new CoreClient({
-      apiKey: 'chr_sk_test',
+      apiKey: 'chr_sk_xxx',
       baseUrl: 'https://api.chronary.ai/',
       fetch,
       maxRetries: 0,
