@@ -4,15 +4,14 @@ import { mockFetch, clientConfig } from '../helpers';
 
 const SUBSCRIPTION = {
   id: 'ics_abc123',
-  orgId: 'org-1',
-  agentId: 'agt_abc123',
-  calendarId: 'cal_abc123',
+  agent_id: 'agt_abc123',
+  calendar_id: 'cal_abc123',
   url: 'https://example.com/feed.ics',
   label: 'External Feed',
   status: 'active',
-  lastSyncedAt: '2026-04-10T12:00:00Z',
-  lastError: null,
-  createdAt: '2026-04-01T00:00:00Z',
+  last_synced_at: '2026-04-10T12:00:00Z',
+  last_error: null,
+  created_at: '2026-04-01T00:00:00Z',
 };
 
 describe('ICalSubscriptionsClient', () => {

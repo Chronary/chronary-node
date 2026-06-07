@@ -10,6 +10,8 @@ const CALENDAR = {
   timezone: 'America/Los_Angeles',
   metadata: {},
   ical_url: 'https://api.chronary.ai/ical/token123.ics',
+  externalId: null,
+  provider: null,
   deletedAt: null,
   createdAt: '2026-04-01T00:00:00Z',
   updatedAt: '2026-04-01T00:00:00Z',
@@ -39,6 +41,8 @@ describe('CalendarsClient', () => {
 
     const cal = await client.calendars.get('cal_abc123');
     expect(cal.id).toBe('cal_abc123');
+    expect(cal.externalId).toBeNull();
+    expect(cal.provider).toBeNull();
   });
 
   it('list with agentId uses agent-scoped route', async () => {

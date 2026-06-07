@@ -102,6 +102,8 @@ export interface Calendar {
   timezone: string;
   metadata: Record<string, unknown>;
   ical_url: string;
+  externalId: string | null;
+  provider: string | null;
   /** Default reminder offsets (minutes before start) inherited by events that don't set their own. null = system default (10 min); [] = no reminders. */
   default_reminders: number[] | null;
   deletedAt: string | null;
@@ -294,6 +296,8 @@ export interface Webhook {
   secret?: string;
   events: string[];
   active: boolean;
+  consecutiveFailures: number;
+  firstFailureAt: string | null;
   createdAt: string;
 }
 
@@ -350,15 +354,14 @@ export interface ListWebhookDeliveriesParams {
 
 export interface ICalSubscription {
   id: string;
-  orgId: string;
-  agentId: string;
-  calendarId: string;
+  agent_id: string;
+  calendar_id: string;
   url: string;
   label: string | null;
   status: 'active' | 'error' | 'paused';
-  lastSyncedAt: string | null;
-  lastError: string | null;
-  createdAt: string;
+  last_synced_at: string | null;
+  last_error: string | null;
+  created_at: string;
 }
 
 export interface CreateICalSubscriptionParams {

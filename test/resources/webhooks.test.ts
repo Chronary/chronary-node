@@ -8,6 +8,8 @@ const WEBHOOK = {
   url: 'https://example.com/webhook',
   events: ['event.created', 'event.updated'],
   active: true,
+  consecutiveFailures: 0,
+  firstFailureAt: null,
   createdAt: '2026-04-01T00:00:00Z',
 };
 
@@ -32,6 +34,8 @@ describe('WebhooksClient', () => {
     const result = await client.webhooks.get('whk_abc123');
     expect(result.id).toBe('whk_abc123');
     expect(result.secret).toBeUndefined();
+    expect(result.consecutiveFailures).toBe(0);
+    expect(result.firstFailureAt).toBeNull();
   });
 
   it('list', async () => {
