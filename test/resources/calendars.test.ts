@@ -9,6 +9,7 @@ const CALENDAR = {
   name: 'Team Meetings',
   timezone: 'America/Los_Angeles',
   metadata: {},
+  agent_status: 'idle',
   ical_url: 'https://api.chronary.ai/ical/token123.ics',
   externalId: null,
   provider: null,
@@ -43,6 +44,7 @@ describe('CalendarsClient', () => {
     expect(cal.id).toBe('cal_abc123');
     expect(cal.externalId).toBeNull();
     expect(cal.provider).toBeNull();
+    expect(cal.agent_status).toBe('idle');
   });
 
   it('list with agentId uses agent-scoped route', async () => {

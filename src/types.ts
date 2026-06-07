@@ -101,6 +101,8 @@ export interface Calendar {
   name: string;
   timezone: string;
   metadata: Record<string, unknown>;
+  /** Live agent status surfaced on the calendar (snake_case wire key). */
+  agent_status: AgentStatus;
   ical_url: string;
   externalId: string | null;
   provider: string | null;
