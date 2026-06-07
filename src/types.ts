@@ -477,6 +477,16 @@ export interface CreateScopedApiKeyParams {
   label?: string;
 }
 
+export interface AcceptTermsParams {
+  /** The terms-of-service version to accept; must equal the current version. */
+  tos_version: string;
+}
+
+export interface AcceptTermsResult {
+  accepted_terms_version: string;
+  accepted_terms_at: string;
+}
+
 export interface UsageMetric {
   used: number;
   limit: number | null;

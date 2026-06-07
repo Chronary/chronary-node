@@ -14,6 +14,7 @@ import { WaitlistClient } from './resources/waitlist';
 import { FeedbackClient } from './resources/feedback';
 import { PlansClient } from './resources/plans';
 import { AccountClient } from './resources/account';
+import { TermsClient } from './resources/terms';
 import { verifySignature, constructEvent } from './webhook-verify';
 import type { ChronaryConfig } from './types';
 
@@ -33,6 +34,7 @@ export class Chronary {
   readonly feedback: FeedbackClient;
   readonly plans: PlansClient;
   readonly account: AccountClient;
+  readonly terms: TermsClient;
 
   constructor(config?: ChronaryConfig) {
     const client = new CoreClient(config);
@@ -51,6 +53,7 @@ export class Chronary {
     this.feedback = new FeedbackClient(client);
     this.plans = new PlansClient(client);
     this.account = new AccountClient(client);
+    this.terms = new TermsClient(client);
   }
 
   static webhooks = {
@@ -141,6 +144,8 @@ export type {
   ScopedApiKey,
   CreatedScopedApiKey,
   CreateScopedApiKeyParams,
+  AcceptTermsParams,
+  AcceptTermsResult,
   AgentSignUpParams,
   AgentSignUpResponse,
   AgentSignUpNewOrgResponse,
