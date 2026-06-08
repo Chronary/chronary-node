@@ -106,6 +106,35 @@ describe('EventsClient', () => {
     expect(fetch.mock.calls[0][0]).toContain('/v1/calendars/cal_abc123/events/evt_abc123');
   });
 
+  it('getById hits event-only route', async () => {
+    const fetch = mockFetch([{ status: 200, body: EVENT }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.events.getById('evt_abc123');
+    expect(result.title).toBe('Stand-up');
+    expect(fetch.mock.calls[0][1]?.method).toBe('GET');
+    expect(fetch.mock.calls[0][0]).toContain('/v1/events/evt_abc123');
+  });
+
+  it('updateById hits event-only route', async () => {
+    const fetch = mockFetch([{ status: 200, body: { ...EVENT, title: 'Renamed' } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.events.updateById('evt_abc123', { title: 'Renamed' });
+    expect(result.title).toBe('Renamed');
+    expect(fetch.mock.calls[0][1]?.method).toBe('PATCH');
+    expect(fetch.mock.calls[0][0]).toContain('/v1/events/evt_abc123');
+  });
+
+  it('deleteById hits event-only route', async () => {
+    const fetch = mockFetch([{ status: 204 }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    await client.events.deleteById('evt_abc123');
+    expect(fetch.mock.calls[0][1]?.method).toBe('DELETE');
+    expect(fetch.mock.calls[0][0]).toContain('/v1/events/evt_abc123');
+  });
+
   it('confirm', async () => {
     const fetch = mockFetch([{ status: 200, body: { ...EVENT, status: 'confirmed' } }]);
     const client = new Chronary(clientConfig(fetch));

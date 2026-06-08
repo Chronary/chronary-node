@@ -61,6 +61,36 @@ export class EventsClient {
   }
 
   /**
+   * Fetch an event by ID alone. The calendar is resolved internally from the
+   * event, so no calendar ID is required.
+   */
+  async getById(eventId: string, options?: RequestOptions): Promise<CalendarEvent> {
+    return this.client.request<CalendarEvent>(
+      'GET', `/v1/events/${eventId}`, undefined, undefined, options,
+    );
+  }
+
+  /**
+   * Update an event by ID alone. The calendar is resolved internally from the
+   * event, so no calendar ID is required.
+   */
+  async updateById(eventId: string, params: UpdateEventParams, options?: RequestOptions): Promise<CalendarEvent> {
+    return this.client.request<CalendarEvent>(
+      'PATCH', `/v1/events/${eventId}`, params, undefined, options,
+    );
+  }
+
+  /**
+   * Delete an event by ID alone. The calendar is resolved internally from the
+   * event, so no calendar ID is required.
+   */
+  async deleteById(eventId: string, options?: RequestOptions): Promise<void> {
+    await this.client.request<void>(
+      'DELETE', `/v1/events/${eventId}`, undefined, undefined, options,
+    );
+  }
+
+  /**
    * Promote a held event (status='hold') to status='confirmed'. Fails with 409
    * if the event is not a hold, or if the hold has already expired.
    */
