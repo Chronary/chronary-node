@@ -11,7 +11,7 @@ describe('PlansClient', () => {
         tagline: 'For prototyping and small agents',
         price: 0,
         currency: 'usd',
-        limits: { agents: 5, calendars: 10, events: 5000, api_calls: 50000, webhook_deliveries: 10000, availability_queries: 10000, ical_subscriptions: 3, proposals: 500 },
+        limits: { agents: 5, calendars: 10, events: 5000, api_calls: 50000, webhook_deliveries: 10000, availability_queries: 10000, ical_subscriptions: 3, proposals: 500, webhook_endpoints: 3, scoped_keys: 0 },
         display_features: ['5 agents'],
         recommended: false,
       },
@@ -52,6 +52,9 @@ describe('PlansClient', () => {
     expect(result.plans[1].id).toBe('pro');
     expect(result.plans[1].price).toBe(2900);
     expect(result.plans[2].custom_pricing).toBe(true);
+    // Guards the endpoint/key caps that were previously absent from PlanLimits.
+    expect(result.plans[0].limits?.webhook_endpoints).toBe(3);
+    expect(result.plans[0].limits?.scoped_keys).toBe(0);
   });
 
   it('list works without an api key configured (public endpoint)', async () => {

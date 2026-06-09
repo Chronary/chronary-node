@@ -602,6 +602,10 @@ export interface PlanLimits {
   availability_queries: number | null;
   ical_subscriptions: number | null;
   proposals: number | null;
+  /** Max active webhook subscription endpoints per org. */
+  webhook_endpoints: number | null;
+  /** Max live agent-scoped API keys (`chr_ak_*`) per org. */
+  scoped_keys: number | null;
 }
 
 export interface Plan {
