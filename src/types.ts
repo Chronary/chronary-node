@@ -221,6 +221,9 @@ export interface BusyBlock {
 export interface AvailabilityParams {
   start: string;
   end: string;
+  /** Requested slot length. Preferred over `slot_duration`. */
+  duration?: SlotDuration;
+  /** @deprecated Use `duration` instead. */
   slot_duration?: SlotDuration;
   include_busy?: boolean;
 }
@@ -229,6 +232,9 @@ export interface CrossAgentAvailabilityParams {
   agents: string[];
   start: string;
   end: string;
+  /** Requested slot length. Preferred over `slot_duration`. */
+  duration?: SlotDuration;
+  /** @deprecated Use `duration` instead. */
   slot_duration?: SlotDuration;
   calendars?: string[];
   include_busy?: boolean;

@@ -15,6 +15,7 @@ export class AvailabilityClient {
       {
         start: params.start,
         end: params.end,
+        duration: params.duration,
         slot_duration: params.slot_duration,
         include_busy: params.include_busy,
       },
@@ -28,6 +29,7 @@ export class AvailabilityClient {
       {
         start: params.start,
         end: params.end,
+        duration: params.duration,
         slot_duration: params.slot_duration,
         include_busy: params.include_busy,
       },
@@ -42,6 +44,7 @@ export class AvailabilityClient {
         agents: params.agents.join(','),
         start: params.start,
         end: params.end,
+        duration: params.duration,
         slot_duration: params.slot_duration,
         calendars: params.calendars?.join(','),
         include_busy: params.include_busy,

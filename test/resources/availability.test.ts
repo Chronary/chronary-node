@@ -65,4 +65,46 @@ describe('AvailabilityClient', () => {
     expect(url).toContain('/v1/availability');
     expect(url).toContain('agents=agt_1%2Cagt_2');
   });
+
+  it('check with duration sends duration and not slot_duration', async () => {
+    const multiResponse = { ...SLOTS_RESPONSE, agents: ['agt_1', 'agt_2'] };
+    const fetch = mockFetch([{ status: 200, body: multiResponse }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    await client.availability.check({
+      agents: ['agt_1', 'agt_2'],
+      start: '2026-04-15T09:00:00Z',
+      end: '2026-04-15T17:00:00Z',
+      duration: '45m',
+    });
+    const url = fetch.mock.calls[0][0] as string;
+    const query = new URL(url).searchParams;
+    // Preferred param `duration` is forwarded verbatim.
+    expect(query.get('duration')).toBe('45m');
+    // The user set only `duration`, so `slot_duration` must NOT be sent —
+    // sending both with the same value is fine, but sending both risks a
+    // false 400 conflict, so the SDK forwards only what the user set.
+    expect(query.has('slot_duration')).toBe(false);
+    expect(url).toContain('agents=agt_1%2Cagt_2');
+  });
+
+  it('check with the deprecated slot_duration still sends slot_duration and not duration', async () => {
+    const multiResponse = { ...SLOTS_RESPONSE, agents: ['agt_1', 'agt_2'] };
+    const fetch = mockFetch([{ status: 200, body: multiResponse }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    await client.availability.check({
+      agents: ['agt_1', 'agt_2'],
+      start: '2026-04-15T09:00:00Z',
+      end: '2026-04-15T17:00:00Z',
+      slot_duration: '1h',
+    });
+    const url = fetch.mock.calls[0][0] as string;
+    const query = new URL(url).searchParams;
+    // Deprecated alias still works and is passed through as-is.
+    expect(query.get('slot_duration')).toBe('1h');
+    // The user did not set `duration`, so it must NOT be forwarded.
+    expect(query.has('duration')).toBe(false);
+    expect(url).toContain('agents=agt_1%2Cagt_2');
+  });
 });
