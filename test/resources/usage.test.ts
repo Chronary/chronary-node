@@ -14,6 +14,7 @@ const USAGE = {
   availability_queries: { used: 5, limit: 10000 },
   ical_subscriptions: { used: 1, limit: 3 },
   proposals: { used: 18, limit: 500 },
+  recurring_events: { used: 2, limit: 5 },
 };
 
 describe('UsageClient', () => {
@@ -27,6 +28,8 @@ describe('UsageClient', () => {
     expect(result.agents.limit).toBe(5);
     expect(result.proposals.used).toBe(18);
     expect(result.proposals.limit).toBe(500);
+    expect(result.recurring_events.used).toBe(2);
+    expect(result.recurring_events.limit).toBe(5);
     expect(fetch.mock.calls[0][0]).toContain('/v1/usage');
   });
 });

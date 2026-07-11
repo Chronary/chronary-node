@@ -107,6 +107,7 @@ export type {
   CreateEventParams,
   UpdateEventParams,
   ListEventsParams,
+  DeleteEventOptions,
   SlotDuration,
   AvailabilitySlot,
   BusyBlock,

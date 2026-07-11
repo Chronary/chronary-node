@@ -155,6 +155,14 @@ export interface CalendarEvent {
   metadata: Record<string, unknown>;
   /** Reminder offsets (minutes before start). null = inherit calendar default (then system default of 10 min); [] = no reminders. */
   reminders: number[] | null;
+  /** RFC 5545 RRULE subset (no "RRULE:" prefix) when this event is a recurring series master, e.g. "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12". null = one-off event. */
+  recurrenceRule: string | null;
+  /** ISO 8601 starts of individually cancelled occurrences (EXDATE). */
+  recurrenceExdates: string[];
+  /** Present only on expanded instances (`expand: true` lists): id of the recurring series master this instance belongs to. */
+  recurringEventId?: string;
+  /** Present only on expanded instances: the occurrence start this instance was generated for. */
+  originalStartTime?: string;
   holdExpiresAt: string | null;
   holdPriority: number | null;
   deletedAt: string | null;
@@ -176,6 +184,15 @@ export interface CreateEventParams {
   hold_expires_at?: string;
   /** Priority for conflict resolution. Only valid with status='hold'. 0-100. */
   hold_priority?: number;
+  /**
+   * RFC 5545 RRULE subset (no "RRULE:" prefix), e.g. "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12" —
+   * makes the event a recurring series master. Not allowed with status='hold'.
+   * Fails with 400 on an invalid rule; 429 when the plan's active
+   * recurring-series cap is reached (free: 5, Pro: 250 — see
+   * `usage.recurring_events`); 403 plan_required when the series is unbounded
+   * or ends more than 90 days out on the free plan (Pro allows unbounded).
+   */
+  recurrence_rule?: string;
 }
 
 export interface UpdateEventParams {
@@ -189,6 +206,16 @@ export interface UpdateEventParams {
   metadata?: Record<string, unknown>;
   /** Reminder offsets in minutes before start. null = inherit calendar default; [] = no reminders. */
   reminders?: number[] | null;
+  /**
+   * Full-series edit of the recurrence rule (RFC 5545 RRULE subset, no
+   * "RRULE:" prefix). null clears the rule, turning the series back into a
+   * one-off event. Fails with 400 on an invalid rule; 429 when converting a
+   * one-off to recurring and the plan's active recurring-series cap is
+   * reached (free: 5, Pro: 250); 403 plan_required when the series is
+   * unbounded or ends more than 90 days out on the free plan (Pro allows
+   * unbounded).
+   */
+  recurrence_rule?: string | null;
 }
 
 export interface ListEventsParams {
@@ -200,6 +227,26 @@ export interface ListEventsParams {
   source?: 'internal' | 'external_ical';
   limit?: number;
   offset?: number;
+  /**
+   * Expand recurring series into individual occurrence instances within the
+   * window. When true, both `start_after` and `start_before` are required
+   * (max 366 days apart) — the API returns 400 otherwise. Expanded instances
+   * carry `recurringEventId` + `originalStartTime`.
+   */
+  expand?: boolean;
+}
+
+/** Options for event delete calls — `RequestOptions` plus recurrence controls. */
+export interface DeleteEventOptions extends RequestOptions {
+  /**
+   * For recurring series only: ISO 8601 start of the single occurrence to
+   * cancel (recorded as an EXDATE). The series lives on and the delete call
+   * resolves to the updated series master event instead of void. Fails with
+   * 400 if the timestamp is not an active occurrence of the series, or 409
+   * if the event is not a recurring series. Omit to delete the whole
+   * event/series (resolves to void).
+   */
+  occurrence_start?: string;
 }
 
 // ── Availability ────────────────────────────────────────────────
@@ -537,6 +584,8 @@ export interface Usage {
   availability_queries: UsageMetric;
   ical_subscriptions: UsageMetric;
   proposals: UsageMetric;
+  /** Active recurring series masters vs. the plan cap (free: 5, Pro: 250; null = unlimited). */
+  recurring_events: UsageMetric;
   holds: HoldsUsage;
   cross_calendar_queries: CrossCalendarQueriesUsage;
 }

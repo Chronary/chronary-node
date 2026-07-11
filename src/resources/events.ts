@@ -5,6 +5,7 @@ import type {
   CreateEventParams,
   UpdateEventParams,
   ListEventsParams,
+  DeleteEventOptions,
   PageResponse,
   RequestOptions,
 } from '../types';
@@ -54,9 +55,22 @@ export class EventsClient {
     );
   }
 
-  async delete(calendarId: string, eventId: string, options?: RequestOptions): Promise<void> {
-    await this.client.request<void>(
-      'DELETE', `/v1/calendars/${calendarId}/events/${eventId}`, undefined, undefined, options,
+  /**
+   * Delete an event (or, for a recurring series, the whole series). Pass
+   * `occurrence_start` to cancel just one occurrence of a recurring series
+   * instead — the series lives on and the updated series master is returned.
+   * Plain deletes resolve to void. With `occurrence_start`, fails with 400 if
+   * the timestamp is not an active occurrence, or 409 if the event is not a
+   * recurring series.
+   */
+  async delete(calendarId: string, eventId: string, options?: DeleteEventOptions): Promise<CalendarEvent | void> {
+    const { occurrence_start, ...requestOptions } = options ?? {};
+    return this.client.request<CalendarEvent | void>(
+      'DELETE',
+      `/v1/calendars/${calendarId}/events/${eventId}`,
+      undefined,
+      occurrence_start !== undefined ? { occurrence_start } : undefined,
+      requestOptions,
     );
   }
 
@@ -82,11 +96,20 @@ export class EventsClient {
 
   /**
    * Delete an event by ID alone. The calendar is resolved internally from the
-   * event, so no calendar ID is required.
+   * event, so no calendar ID is required. Pass `occurrence_start` to cancel
+   * just one occurrence of a recurring series — the series lives on and the
+   * updated series master is returned; plain deletes resolve to void. With
+   * `occurrence_start`, fails with 400 if the timestamp is not an active
+   * occurrence, or 409 if the event is not a recurring series.
    */
-  async deleteById(eventId: string, options?: RequestOptions): Promise<void> {
-    await this.client.request<void>(
-      'DELETE', `/v1/events/${eventId}`, undefined, undefined, options,
+  async deleteById(eventId: string, options?: DeleteEventOptions): Promise<CalendarEvent | void> {
+    const { occurrence_start, ...requestOptions } = options ?? {};
+    return this.client.request<CalendarEvent | void>(
+      'DELETE',
+      `/v1/events/${eventId}`,
+      undefined,
+      occurrence_start !== undefined ? { occurrence_start } : undefined,
+      requestOptions,
     );
   }
 
