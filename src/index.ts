@@ -15,6 +15,7 @@ import { FeedbackClient } from './resources/feedback';
 import { PlansClient } from './resources/plans';
 import { AccountClient } from './resources/account';
 import { TermsClient } from './resources/terms';
+import { ConnectionLinksClient } from './resources/connection-links';
 import { verifySignature, constructEvent } from './webhook-verify';
 import type { ChronaryConfig } from './types';
 
@@ -35,6 +36,7 @@ export class Chronary {
   readonly plans: PlansClient;
   readonly account: AccountClient;
   readonly terms: TermsClient;
+  readonly connectionLinks: ConnectionLinksClient;
 
   constructor(config?: ChronaryConfig) {
     const client = new CoreClient(config);
@@ -54,6 +56,7 @@ export class Chronary {
     this.plans = new PlansClient(client);
     this.account = new AccountClient(client);
     this.terms = new TermsClient(client);
+    this.connectionLinks = new ConnectionLinksClient(client);
   }
 
   static webhooks = {
@@ -70,6 +73,8 @@ export { PageIterator } from './pagination';
 export { verifySignature, constructEvent } from './webhook-verify';
 export { VERSION } from './version';
 export { isAgentSignUpNewOrg } from './resources/agent-auth';
+export { ConnectionLinksClient } from './resources/connection-links';
+export type { ConnectionLink, CreateConnectionLinkParams } from './resources/connection-links';
 
 export {
   ChronaryError,

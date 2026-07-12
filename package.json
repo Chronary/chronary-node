@@ -1,6 +1,6 @@
 {
   "name": "@chronary/sdk",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Official TypeScript SDK for the Chronary calendar-as-a-service API",
   "license": "Apache-2.0",
   "type": "module",

@@ -2,6 +2,10 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
+## 0.5.1 — 2026-07-12
+
+- Add connection-link APIs so agents can request and monitor human calendar setup without receiving provider credentials or calendar details.
+
 ## 0.1.4 — 2026-05-19
 
 - First OIDC + Sigstore-provenance release. Published via npm Trusted Publishing from `Chronary/chronary-node`; provenance badge visible on npmjs.com.
