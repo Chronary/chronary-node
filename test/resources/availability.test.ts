@@ -32,10 +32,12 @@ describe('AvailabilityClient', () => {
       end: '2026-04-15T17:00:00Z',
       slot_duration: '1h',
       include_busy: true,
+      allow_stale: true,
     });
     const url = fetch.mock.calls[0][0] as string;
     expect(url).toContain('slot_duration=1h');
     expect(url).toContain('include_busy=true');
+    expect(url).toContain('allow_stale=true');
   });
 
   it('forCalendar', async () => {

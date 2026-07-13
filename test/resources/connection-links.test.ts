@@ -8,7 +8,7 @@ describe('ConnectionLinksClient', () => {
   it('creates, gets, and cancels setup links', async () => {
     const fetch = mockFetch([{ status: 201, body: LINK }, { status: 200, body: LINK }, { status: 204 }]);
     const client = new Chronary(clientConfig(fetch));
-    expect((await client.connectionLinks.create('cal_1', { capabilities: ['availability'] })).id).toBe('csl_1');
+    expect((await client.connectionLinks.create('cal_1', { capabilities: ['availability', 'publishing'], publication_policy: 'confirmed' })).id).toBe('csl_1');
     expect((await client.connectionLinks.get('csl_1')).status).toBe('awaiting_human');
     await client.connectionLinks.cancel('csl_1');
     expect(fetch.mock.calls.map((call) => call[1]?.method)).toEqual(['POST', 'GET', 'DELETE']);

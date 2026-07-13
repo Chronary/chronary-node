@@ -2,6 +2,11 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
+## 0.6.0 — 2026-07-12
+
+- Add `allow_stale` serialization and typed `availability_state`, `sources`, and `warnings` for agent/cross-agent availability.
+- Add a distinct calendar availability response shape and retain connection-link lifecycle support.
+
 ## 0.5.1 — 2026-07-12
 
 - Add connection-link APIs so agents can request and monitor human calendar setup without receiving provider credentials or calendar details.

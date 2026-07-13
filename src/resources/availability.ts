@@ -3,6 +3,7 @@ import type {
   AvailabilityParams,
   CrossAgentAvailabilityParams,
   AvailabilityResponse,
+  CalendarAvailabilityResponse,
   RequestOptions,
 } from '../types';
 
@@ -18,13 +19,14 @@ export class AvailabilityClient {
         duration: params.duration,
         slot_duration: params.slot_duration,
         include_busy: params.include_busy,
+        allow_stale: params.allow_stale,
       },
       options,
     );
   }
 
-  async forCalendar(calendarId: string, params: AvailabilityParams, options?: RequestOptions): Promise<AvailabilityResponse> {
-    return this.client.request<AvailabilityResponse>(
+  async forCalendar(calendarId: string, params: AvailabilityParams, options?: RequestOptions): Promise<CalendarAvailabilityResponse> {
+    return this.client.request<CalendarAvailabilityResponse>(
       'GET', `/v1/calendars/${calendarId}/availability`, undefined,
       {
         start: params.start,
@@ -32,6 +34,7 @@ export class AvailabilityClient {
         duration: params.duration,
         slot_duration: params.slot_duration,
         include_busy: params.include_busy,
+        allow_stale: params.allow_stale,
       },
       options,
     );
@@ -48,6 +51,7 @@ export class AvailabilityClient {
         slot_duration: params.slot_duration,
         calendars: params.calendars?.join(','),
         include_busy: params.include_busy,
+        allow_stale: params.allow_stale,
       },
       options,
     );

@@ -273,6 +273,8 @@ export interface AvailabilityParams {
   /** @deprecated Use `duration` instead. */
   slot_duration?: SlotDuration;
   include_busy?: boolean;
+  /** Return slots from usable stale human-calendar cache. Defaults false (fail closed). */
+  allow_stale?: boolean;
 }
 
 export interface CrossAgentAvailabilityParams {
@@ -285,12 +287,40 @@ export interface CrossAgentAvailabilityParams {
   slot_duration?: SlotDuration;
   calendars?: string[];
   include_busy?: boolean;
+  /** Return slots from usable stale human-calendar cache. Defaults false (fail closed). */
+  allow_stale?: boolean;
 }
 
-export interface AvailabilityResponse {
+export type AvailabilityState = 'complete' | 'stale' | 'partial' | 'unavailable';
+export type AvailabilitySourceState = 'current' | 'stale' | 'partial' | 'unavailable';
+
+export interface AvailabilitySources {
+  chronary: 'current';
+  external: AvailabilitySourceState;
+  last_synced_at?: string | null;
+}
+
+export interface AvailabilityWarning {
+  code: 'availability_incomplete';
+  message: string;
+}
+
+interface AvailabilityHealth {
+  availability_state: AvailabilityState;
+  sources: AvailabilitySources;
+  warnings: AvailabilityWarning[];
+}
+
+export interface AvailabilityResponse extends AvailabilityHealth {
   agents: string[];
   slots: AvailabilitySlot[];
   per_agent_busy?: Record<string, BusyBlock[]>;
+}
+
+export interface CalendarAvailabilityResponse extends AvailabilityHealth {
+  calendar_id: string;
+  slots: AvailabilitySlot[];
+  busy?: AvailabilitySlot[];
 }
 
 // ── Calendar context ────────────────────────────────────────────
