@@ -2,6 +2,10 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
+## 0.7.1 — 2026-07-14
+
+- Docs-only: neutral wording for the booking-page type (no competitor references). No API change.
+
 ## 0.7.0 — 2026-07-14
 
 - Add the `bookingPages` resource — CRUD for agent-created public scheduling links plus public `listSlots`/`submit` helpers — and a `booking_pages` usage metric (#1036).
