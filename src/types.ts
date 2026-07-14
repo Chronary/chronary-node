@@ -137,6 +137,101 @@ export interface ListCalendarsParams {
   offset?: number;
 }
 
+// ── Booking pages ───────────────────────────────────────────────
+
+export interface BookingPage {
+  id: string;
+  org_id: string;
+  calendar_id: string;
+  agent_id: string | null;
+  slug: string;
+  title: string;
+  description: string | null;
+  duration_minutes: number;
+  buffer_minutes: number;
+  window_days: number;
+  min_notice_minutes: number;
+  timezone: string;
+  /** Weekly working hours; null = any time inside the window (calendar events still block). */
+  availability_constraints: WorkingHours | null;
+  active: boolean;
+  bookings_count: number;
+  /** Public hosted URL to share with humans. */
+  booking_url: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBookingPageParams {
+  calendar_id: string;
+  title: string;
+  description?: string;
+  duration_minutes?: number;
+  buffer_minutes?: number;
+  window_days?: number;
+  min_notice_minutes?: number;
+  timezone?: string;
+  availability_constraints?: WorkingHours | null;
+  active?: boolean;
+}
+
+export interface UpdateBookingPageParams {
+  title?: string;
+  description?: string | null;
+  duration_minutes?: number;
+  buffer_minutes?: number;
+  window_days?: number;
+  min_notice_minutes?: number;
+  timezone?: string;
+  availability_constraints?: WorkingHours | null;
+  active?: boolean;
+}
+
+export interface ListBookingPagesParams {
+  limit?: number;
+  offset?: number;
+}
+
+/** A single bookable slot returned by the public slots endpoint. */
+export interface BookingSlot {
+  start: string;
+  end: string;
+}
+
+export interface BookingSlotsResponse {
+  booking_page: {
+    slug: string;
+    title: string;
+    description: string | null;
+    duration_minutes: number;
+    timezone: string;
+  };
+  slots: BookingSlot[];
+}
+
+export interface SubmitBookingParams {
+  name: string;
+  email: string;
+  notes?: string;
+  start: string;
+}
+
+/** Minimal event confirmation returned by the public booking endpoint. The
+ *  full event (with tenant identifiers) is available to the owning agent via
+ *  the authenticated events API and the `event.created` webhook. */
+export interface BookingSubmissionEvent {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+}
+
+export interface BookingSubmissionResult {
+  booking_page_id: string;
+  event: BookingSubmissionEvent;
+}
+
 // ── Events ──────────────────────────────────────────────────────
 
 export type EventStatus = 'confirmed' | 'tentative' | 'cancelled' | 'hold';
@@ -616,6 +711,8 @@ export interface Usage {
   proposals: UsageMetric;
   /** Active recurring series masters vs. the plan cap (free: 5, Pro: 250; null = unlimited). */
   recurring_events: UsageMetric;
+  /** Active booking pages vs. the plan cap (free: 1, Pro: 25; null = unlimited). */
+  booking_pages: UsageMetric;
   holds: HoldsUsage;
   cross_calendar_queries: CrossCalendarQueriesUsage;
 }

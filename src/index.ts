@@ -1,6 +1,7 @@
 import { CoreClient } from './client';
 import { AgentsClient } from './resources/agents';
 import { CalendarsClient } from './resources/calendars';
+import { BookingPagesClient } from './resources/booking-pages';
 import { EventsClient } from './resources/events';
 import { AvailabilityClient } from './resources/availability';
 import { WebhooksClient } from './resources/webhooks';
@@ -22,6 +23,7 @@ import type { ChronaryConfig } from './types';
 export class Chronary {
   readonly agents: AgentsClient;
   readonly calendars: CalendarsClient;
+  readonly bookingPages: BookingPagesClient;
   readonly events: EventsClient;
   readonly availability: AvailabilityClient;
   readonly webhooks: WebhooksClient;
@@ -42,6 +44,7 @@ export class Chronary {
     const client = new CoreClient(config);
     this.agents = new AgentsClient(client);
     this.calendars = new CalendarsClient(client);
+    this.bookingPages = new BookingPagesClient(client);
     this.events = new EventsClient(client);
     this.availability = new AvailabilityClient(client);
     this.webhooks = new WebhooksClient(client);
@@ -75,6 +78,7 @@ export { VERSION } from './version';
 export { isAgentSignUpNewOrg } from './resources/agent-auth';
 export { ConnectionLinksClient } from './resources/connection-links';
 export type { ConnectionLink, CreateConnectionLinkParams } from './resources/connection-links';
+export { BookingPagesClient } from './resources/booking-pages';
 
 export {
   ChronaryError,
@@ -103,6 +107,15 @@ export type {
   UpdateCalendarParams,
   ListCalendarsParams,
   CalendarContext,
+  BookingPage,
+  CreateBookingPageParams,
+  UpdateBookingPageParams,
+  ListBookingPagesParams,
+  BookingSlot,
+  BookingSlotsResponse,
+  SubmitBookingParams,
+  BookingSubmissionEvent,
+  BookingSubmissionResult,
   AgentStatus,
   AvailabilityRules,
   SetAvailabilityRulesParams,
