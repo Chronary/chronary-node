@@ -1,6 +1,6 @@
 {
   "name": "@chronary/sdk",
-  "version": "0.7.1",
+  "version": "0.8.1",
   "description": "Official TypeScript SDK for the Chronary calendar-as-a-service API",
   "license": "Apache-2.0",
   "type": "module",
@@ -58,8 +58,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "tsup": "^8.0.0",
+    "tsup": "^9.0.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^5.0.5"
   }
 }

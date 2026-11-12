@@ -17,7 +17,7 @@ async function sign(secret: string, timestamp: string, payload: string): Promise
 }
 
 describe('Webhook verification', () => {
-  const secret = 'whsec_abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678';
+  const secret = 'whsec_test_fixture_not_a_real_secret';
   const payload = JSON.stringify({ event: { id: 'evt_1' } });
   const nowSec = Math.floor(Date.now() / 1000);
   const timestamp = String(nowSec);
@@ -154,5 +154,68 @@ describe('Webhook verification', () => {
 
     await expect(verifySignature({ parsed: true } as unknown as string, headers, secret))
       .rejects.toThrow('rawBody must be a string');
+  });
+});
+
+describe('Webhook verification during a secret rotation (#594)', () => {
+  const oldSecret = 'whsec_old';
+  const newSecret = 'whsec_new';
+  const payload = JSON.stringify({ event: { id: 'evt_1' } });
+  const timestamp = String(Math.floor(Date.now() / 1000));
+
+  async function rotatedHeaders(): Promise<Record<string, string>> {
+    return {
+      'X-Signature': await sign(newSecret, timestamp, payload),
+      'X-Signature-Previous': await sign(oldSecret, timestamp, payload),
+      'X-Timestamp': timestamp,
+    };
+  }
+
+  it('accepts the new secret via X-Signature', async () => {
+    await expect(verifySignature(payload, await rotatedHeaders(), newSecret)).resolves.toBeUndefined();
+  });
+
+  it('accepts the old secret via X-Signature-Previous', async () => {
+    await expect(verifySignature(payload, await rotatedHeaders(), oldSecret)).resolves.toBeUndefined();
+  });
+
+  it('reads X-Signature-Previous case-insensitively and from a Headers object', async () => {
+    const lower = Object.fromEntries(Object.entries(await rotatedHeaders()).map(([k, v]) => [k.toLowerCase(), v]));
+    await expect(verifySignature(payload, lower, oldSecret)).resolves.toBeUndefined();
+    await expect(verifySignature(payload, new Headers(await rotatedHeaders()), oldSecret)).resolves.toBeUndefined();
+  });
+
+  it('rejects when neither header matches the secret', async () => {
+    await expect(verifySignature(payload, await rotatedHeaders(), 'whsec_other')).rejects.toThrow(
+      'signature verification failed',
+    );
+  });
+
+  it('rejects the old secret once X-Signature-Previous is no longer sent', async () => {
+    const headers = await rotatedHeaders();
+    delete headers['X-Signature-Previous'];
+    await expect(verifySignature(payload, headers, oldSecret)).rejects.toThrow('signature verification failed');
+  });
+
+  it('still requires X-Signature even when X-Signature-Previous matches', async () => {
+    const headers = await rotatedHeaders();
+    delete headers['X-Signature'];
+    await expect(verifySignature(payload, headers, oldSecret)).rejects.toThrow('Missing X-Signature header');
+  });
+
+  it('does not let a valid previous signature bypass the timestamp check', async () => {
+    const stale = String(Math.floor(Date.now() / 1000) - 3600);
+    const headers = {
+      'X-Signature': await sign(newSecret, stale, payload),
+      'X-Signature-Previous': await sign(oldSecret, stale, payload),
+      'X-Timestamp': stale,
+    };
+    await expect(verifySignature(payload, headers, oldSecret)).rejects.toThrow('timestamp too old');
+  });
+
+  it('constructEvent works with the old secret during the window', async () => {
+    const headers = { ...(await rotatedHeaders()), 'X-Chronary-Event-Type': 'event.created' };
+    const event = await constructEvent(payload, headers, oldSecret);
+    expect(event.type).toBe('event.created');
   });
 });

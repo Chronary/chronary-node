@@ -13,6 +13,12 @@ export class AuditLogClient {
       to: params?.to,
       action: params?.action,
       actor_key_prefix: params?.actor_key_prefix,
+      actor_type: params?.actor_type,
+      actor_id: params?.actor_id,
+      request_id: params?.request_id,
+      resource: params?.resource,
+      status_class: params?.status_class,
+      category: params?.category,
       cursor: params?.cursor,
       limit: params?.limit,
     };

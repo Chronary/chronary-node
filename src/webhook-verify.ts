@@ -47,18 +47,24 @@ function getHeader(headers: Headers | Record<string, string>, name: string): str
   return null;
 }
 
-function extractHeaders(headers: Headers | Record<string, string>): { signature: string; timestamp: string } {
+function extractHeaders(headers: Headers | Record<string, string>): {
+  signature: string;
+  previousSignature: string | null;
+  timestamp: string;
+} {
   const get = (name: string): string | null => {
     return getHeader(headers, name);
   };
 
   const signature = get('X-Signature') ?? get('x-signature');
+  // Sent during a secret rotation's grace window, signed with the replaced secret.
+  const previousSignature = get('X-Signature-Previous') ?? get('x-signature-previous');
   const timestamp = get('X-Timestamp') ?? get('x-timestamp');
 
   if (!signature) throw new ChronaryError('Missing X-Signature header', 0);
   if (!timestamp) throw new ChronaryError('Missing X-Timestamp header', 0);
 
-  return { signature, timestamp };
+  return { signature, previousSignature: previousSignature || null, timestamp };
 }
 
 export async function verifySignature(
@@ -74,7 +80,7 @@ export async function verifySignature(
     );
   }
 
-  const { signature, timestamp } = extractHeaders(headers);
+  const { signature, previousSignature, timestamp } = extractHeaders(headers);
   const tolerance = options?.tolerance ?? DEFAULT_TOLERANCE;
 
   // Timestamp tolerance check for replay prevention
@@ -87,8 +93,14 @@ export async function verifySignature(
     );
   }
 
+  // After a rotation, deliveries carry X-Signature (new secret) and, until
+  // the old secret expires, X-Signature-Previous (old secret). Accept the
+  // configured secret matching either, so a receiver can switch secrets at
+  // any point in the window. Both comparisons always run (constant time).
   const expected = await computeSignature(secret, timestamp, rawBody);
-  if (!constantTimeEqual(expected, signature)) {
+  const matchesCurrent = constantTimeEqual(expected, signature);
+  const matchesPrevious = previousSignature !== null && constantTimeEqual(expected, previousSignature);
+  if (!matchesCurrent && !matchesPrevious) {
     throw new ChronaryError('Webhook signature verification failed', 0);
   }
 }

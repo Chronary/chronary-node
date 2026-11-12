@@ -86,4 +86,24 @@ describe('ICalSubscriptionsClient', () => {
     expect(fetch.mock.calls[0][0]).toContain('/v1/ical-subscriptions/ics_abc123/sync');
     expect(fetch.mock.calls[0][1]?.method).toBe('POST');
   });
+
+  it('pause', async () => {
+    const fetch = mockFetch([{ status: 200, body: { ...SUBSCRIPTION, status: 'paused' } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.icalSubscriptions.pause('ics_abc123');
+    expect(result.status).toBe('paused');
+    expect(fetch.mock.calls[0][0]).toContain('/v1/ical-subscriptions/ics_abc123/pause');
+    expect(fetch.mock.calls[0][1]?.method).toBe('POST');
+  });
+
+  it('resume', async () => {
+    const fetch = mockFetch([{ status: 200, body: SUBSCRIPTION }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.icalSubscriptions.resume('ics_abc123');
+    expect(result.status).toBe('active');
+    expect(fetch.mock.calls[0][0]).toContain('/v1/ical-subscriptions/ics_abc123/resume');
+    expect(fetch.mock.calls[0][1]?.method).toBe('POST');
+  });
 });

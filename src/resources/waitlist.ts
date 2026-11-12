@@ -9,19 +9,18 @@ export class WaitlistClient {
   constructor(private readonly client: CoreClient) {}
 
   /**
-   * Join the Chronary waitlist (#442). Used during private preview when open
-   * signup is gated. Creates a real organization row flagged as
-   * `is_waitlisted: true`; an admin flips the flag to activate the account.
+   * Join the Chronary waitlist. Used while open sign-up is gated. Adds the
+   * email to the waitlist; an account is created only when a founder approves
+   * it and the person accepts the emailed invite.
    *
    * No authentication required — invoke on a `Chronary` client constructed
    * with no `apiKey`.
    *
-   * Idempotent on repeat hits: a second call with the same email returns
-   * the existing waitlisted org instead of erroring. An active (non-waitlisted)
-   * account at the same email returns 409 `email_taken`.
+   * Always resolves to the same `{ waitlisted: true, message }` (HTTP 202),
+   * whether the email is new, already on the list, or has an active account,
+   * so the response can't be used to look up other people's accounts. Only a
+   * new email is sent the confirmation email.
    *
-   * @throws ChronaryError (409 `email_taken`) when an active account already
-   *   exists for this email — direct the user to sign-in instead.
    * @throws ChronaryError (409 `tos_version_stale`) when the supplied
    *   `tos_version` doesn't match the currently-published version.
    * @throws ChronaryError (429 `rate_limit_error`) on the per-IP / per-email

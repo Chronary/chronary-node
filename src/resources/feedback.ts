@@ -9,7 +9,7 @@ export class FeedbackClient {
   constructor(private readonly client: CoreClient) {}
 
   /**
-   * Submit structured feedback (bug, feature, or friction) to Chronary.
+   * Submit structured feedback (bug, feature, friction, or support) to Chronary.
    *
    * Rate-limited to 25 submissions per day per organization (UTC day).
    * Available on all plans, including free. The 26th submission returns

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { CoreClient } from '../src/client';
 import { APIPromise } from '../src/api-promise';
 import { mockFetch, clientConfig } from './helpers';
+import { expectLinearTime } from './linear-time';
 
 describe('APIPromise', () => {
   it('resolves to parsed data when awaited directly', async () => {
@@ -180,5 +181,55 @@ describe('APIPromise', () => {
       expect(response.headers.get('ratelimit')).toContain('r=499');
       expect(response.headers.get('ratelimit-policy')).toContain('q=500');
     });
+
+    async function quotaFor(rateLimit: string, policy: string) {
+      const fetch = mockFetch([{
+        status: 200,
+        body: { data: [] },
+        headers: { 'RateLimit-Policy': policy, 'RateLimit': rateLimit },
+      }]);
+      const client = new CoreClient(clientConfig(fetch));
+      const { response } = await client.request('GET', '/v1/agents').withResponse();
+      return response.quota;
+    }
+
+    it('allows whitespace before a parameter and reads the first well-formed match', async () => {
+      const quota = await quotaFor('"quota";  r=7;r=9;t=60', '"quota"; q=x; q=100;w=60');
+      expect(quota?.remaining).toBe(7);
+      expect(quota?.limit).toBe(100);
+    });
+
+    it('accepts a negative value and a parameter at the start of the header', async () => {
+      const quota = await quotaFor('r=-1;t=0', 'q=5');
+      expect(quota?.remaining).toBe(-1);
+      expect(quota?.limit).toBe(5);
+    });
+
+    it.each([
+      ['a value with trailing junk', '"quota";r=10x;t=60'],
+      ['an empty value', '"quota";r=;t=60'],
+      ['a bare minus sign', '"quota";r=-;t=60'],
+      ['a key that only ends with the name', '"quota";xr=10;t=60'],
+      ['whitespace after the value', '"quota";r=10 ;t=60'],
+    ])('omits the quota snapshot for %s', async (_label, rateLimit) => {
+      expect(await quotaFor(rateLimit, '"quota";q=100')).toBeUndefined();
+    });
+
+    it('omits the quota snapshot when a value overflows to Infinity', async () => {
+      expect(await quotaFor(`"quota";r=${'9'.repeat(400)};t=60`, '"quota";q=100')).toBeUndefined();
+    });
+
+    it.each([
+      ['a long whitespace run', (n: number) => `"quota";${' '.repeat(n)}x`],
+      ['a long digit run', (n: number) => `"quota";r=${'1'.repeat(n)}x`],
+      ['separators then whitespace', (n: number) => `${';'.repeat(n / 2)}${' '.repeat(n / 2)}x`],
+      ['repeated empty members', (n: number) => `${'; r='.repeat(n / 4)}x`],
+    ])('parses a RateLimit header with %s in linear time', async (_label, makeHeader) => {
+      // The snapshot is parsed while the request resolves.
+      const parse = async (header: string) => {
+        expect(await quotaFor(header, header)).toBeUndefined();
+      };
+      await expectLinearTime(makeHeader, parse, 12_500);
+    }, 20_000);
   });
 });

@@ -5,6 +5,7 @@ import type {
   CreateEventParams,
   UpdateEventParams,
   ListEventsParams,
+  ListOrgEventsParams,
   DeleteEventOptions,
   PageResponse,
   RequestOptions,
@@ -40,6 +41,25 @@ export class EventsClient {
     return new PageIterator<CalendarEvent>(
       (offset, l) =>
         this.client.request<PageResponse<CalendarEvent>>('GET', path, undefined, {
+          ...filters,
+          limit: l,
+          offset,
+        }),
+      limit,
+      offset,
+    );
+  }
+
+  /**
+   * List events across all of the organization's calendars (`GET /v1/events`),
+   * ordered by start time. An agent-scoped key sees only its agent's
+   * calendars. `q` searches titles and needs a window of at most 31 days.
+   */
+  listAll(params: ListOrgEventsParams = {}): PageIterator<CalendarEvent> {
+    const { limit = 50, offset = 0, ...filters } = params;
+    return new PageIterator<CalendarEvent>(
+      (offset, l) =>
+        this.client.request<PageResponse<CalendarEvent>>('GET', '/v1/events', undefined, {
           ...filters,
           limit: l,
           offset,

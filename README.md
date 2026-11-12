@@ -82,6 +82,12 @@ const event = await Chronary.webhooks.constructEvent(rawBody, headers, secret);
 // event.type comes from X-Chronary-Event-Type; event.data is the parsed payload body.
 ```
 
+## Security and support
+
+Report vulnerabilities to [security@chronary.ai](mailto:security@chronary.ai) or through private vulnerability reporting on this package's GitHub repository. Please don't open a public issue. Read the full [security policy](https://github.com/Chronary/.github/blob/main/SECURITY.md).
+
+Version 0.x is supported with security fixes until at least **April 2031**. Fixes ship in a new 0.x release, so keep up with the latest one. Supported versions and end dates for every Chronary package are listed in the [security policy](https://github.com/Chronary/.github/blob/main/SECURITY.md#supported-versions).
+
 ## License
 
 Apache-2.0

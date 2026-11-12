@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { CoreClient } from '../src/client';
 import { AuthenticationError, RateLimitError, NotFoundError, ValidationError, ConnectionError, ChronaryError } from '../src/error';
 import { mockFetch, clientConfig } from './helpers';
+import { expectLinearTime } from './linear-time';
 
 describe('CoreClient', () => {
   it('constructs without an API key (for unauthenticated endpoints like agentAuth.signUp)', () => {
@@ -220,7 +221,7 @@ describe('CoreClient', () => {
 
   it('retries on 500 errors', async () => {
     const fetch = mockFetch([
-      { status: 500, body: { error: { type: 'internal', message: 'Server error', request_id: 'req_1' } } },
+      { status: 500, body: { error: { type: 'internal_error', message: 'Server error', request_id: 'req_1' } } },
       { status: 200, body: { id: 'agt_1' } },
     ]);
     const client = new CoreClient({ ...clientConfig(fetch), maxRetries: 1 });
@@ -275,4 +276,24 @@ describe('CoreClient', () => {
     await client.request('GET', '/v1/agents');
     expect(fetch.mock.calls[0][0]).toBe('https://api.chronary.ai/v1/agents');
   });
+
+  it.each([
+    ['https://api.chronary.ai', 'https://api.chronary.ai'],
+    ['https://api.chronary.ai///', 'https://api.chronary.ai'],
+    ['https://custom.api.com/api/', 'https://custom.api.com/api'],
+    ['https://custom.api.com//api', 'https://custom.api.com//api'],
+    ['/', ''],
+    ['', ''],
+  ])('normalises baseUrl %j to %j', (input, expected) => {
+    const client = new CoreClient({ apiKey: 'chr_sk_xxx', baseUrl: input, fetch: mockFetch([]) });
+    expect(client.baseUrl).toBe(expected);
+  });
+
+  it('strips a pathological run of slashes from baseUrl in linear time', async () => {
+    const slashes = (n: number) => `https://api.chronary.ai${'/'.repeat(n)}x${'/'.repeat(n)}`;
+    const construct = (baseUrl: string) =>
+      new CoreClient({ apiKey: 'chr_sk_xxx', baseUrl, fetch: mockFetch([]) });
+    await expectLinearTime(slashes, construct, 12_500);
+    expect(construct(slashes(50_000)).baseUrl).toBe(`https://api.chronary.ai${'/'.repeat(50_000)}x`);
+  }, 20_000);
 });

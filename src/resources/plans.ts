@@ -7,7 +7,7 @@ export class PlansClient {
   /**
    * Fetch the public plan catalog (`GET /v1/plans`).
    *
-   * Returns all sellable tiers (free, pro, scale) plus the enterprise
+   * Returns all sellable tiers (free, developer, pro) plus the enterprise
    * tier with `custom_pricing: true`. No authentication required.
    * Responses are cacheable for 5 minutes at the edge.
    */

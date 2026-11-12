@@ -155,3 +155,23 @@ describe('CalendarsClient', () => {
     expect(fetch.mock.calls[0][0]).toContain('/v1/calendars/cal_abc123/availability-rules');
   });
 });
+
+describe('CalendarsClient (#1202 PR2)', () => {
+  it('rotateIcalToken POSTs to /v1/calendars/:id/ical-token/rotate', async () => {
+    const fetch = mockFetch([{ status: 200, body: { ...CALENDAR, ical_url: 'https://api.chronary.ai/ical/new.ics' } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const cal = await client.calendars.rotateIcalToken('cal_abc123');
+    expect(fetch.mock.calls[0][1]?.method).toBe('POST');
+    expect(fetch.mock.calls[0][0]).toContain('/v1/calendars/cal_abc123/ical-token/rotate');
+    expect(cal.ical_url).toBe('https://api.chronary.ai/ical/new.ics');
+  });
+
+  it('list passes q', async () => {
+    const fetch = mockFetch([{ status: 200, body: { data: [CALENDAR], total: 1, limit: 50, offset: 0, next_cursor: null } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    await client.calendars.list({ q: 'Team' }).getPage();
+    expect(fetch.mock.calls[0][0]).toContain('q=Team');
+  });
+});

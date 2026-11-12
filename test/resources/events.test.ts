@@ -299,3 +299,35 @@ describe('EventsClient', () => {
     expect(body.hold_priority).toBe(10);
   });
 });
+
+describe('EventsClient.listAll (#1202 PR2)', () => {
+  it('hits GET /v1/events with repeated calendar_id params and filters', async () => {
+    const fetch = mockFetch([{ status: 200, body: { data: [EVENT], total: 1, limit: 50, offset: 0, next_cursor: null } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const page = await client.events
+      .listAll({
+        calendar_id: ['cal_a', 'cal_b'],
+        q: 'standup',
+        start_after: '2026-04-01T00:00:00Z',
+        start_before: '2026-04-15T00:00:00Z',
+      })
+      .getPage();
+    const url = new URL(fetch.mock.calls[0][0] as string);
+    expect(url.pathname).toBe('/v1/events');
+    expect(url.searchParams.getAll('calendar_id')).toEqual(['cal_a', 'cal_b']);
+    expect(url.searchParams.get('q')).toBe('standup');
+    expect(url.searchParams.get('limit')).toBe('50');
+    expect(page.data).toHaveLength(1);
+  });
+
+  it('sends a single calendar_id as one param', async () => {
+    const fetch = mockFetch([{ status: 200, body: { data: [], total: 0, limit: 50, offset: 0, next_cursor: null } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    await client.events.listAll({ calendar_id: 'cal_a', agent_id: 'agt_1' }).getPage();
+    const url = new URL(fetch.mock.calls[0][0] as string);
+    expect(url.searchParams.getAll('calendar_id')).toEqual(['cal_a']);
+    expect(url.searchParams.get('agent_id')).toBe('agt_1');
+  });
+});

@@ -49,9 +49,29 @@ export class ICalSubscriptionsClient {
     );
   }
 
+  /**
+   * Start an immediate fetch of the feed. Resolves with `{ status: 'syncing' }`
+   * as soon as the fetch has started; read the subscription a few seconds later
+   * for `last_synced_at` / `last_error`. A paused feed rejects with 409, and a
+   * second sync of the same feed within a minute rejects with 429.
+   */
   async sync(id: string, options?: RequestOptions): Promise<{ status: string }> {
     return this.client.request<{ status: string }>(
       'POST', `/v1/ical-subscriptions/${id}/sync`, undefined, undefined, options,
+    );
+  }
+
+  /** Stop polling the feed until it is resumed. Pausing a paused feed changes nothing. */
+  async pause(id: string, options?: RequestOptions): Promise<ICalSubscription> {
+    return this.client.request<ICalSubscription>(
+      'POST', `/v1/ical-subscriptions/${id}/pause`, undefined, undefined, options,
+    );
+  }
+
+  /** Return a paused or failing feed to polling and clear `last_error`. */
+  async resume(id: string, options?: RequestOptions): Promise<ICalSubscription> {
+    return this.client.request<ICalSubscription>(
+      'POST', `/v1/ical-subscriptions/${id}/resume`, undefined, undefined, options,
     );
   }
 }

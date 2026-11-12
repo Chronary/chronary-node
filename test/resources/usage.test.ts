@@ -32,4 +32,21 @@ describe('UsageClient', () => {
     expect(result.recurring_events.limit).toBe(5);
     expect(fetch.mock.calls[0][0]).toContain('/v1/usage');
   });
+
+  it('history sends the months query and defaults to none', async () => {
+    const body = { plan: 'free', months: 3, limits: {}, data: [] };
+    const fetch = mockFetch([
+      { status: 200, body },
+      { status: 200, body },
+    ]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.usage.history({ months: 3 });
+    expect(result.months).toBe(3);
+    expect(fetch.mock.calls[0][0]).toContain('/v1/usage/history?months=3');
+
+    await client.usage.history();
+    expect(fetch.mock.calls[1][0]).toContain('/v1/usage/history');
+    expect(fetch.mock.calls[1][0]).not.toContain('months=');
+  });
 });

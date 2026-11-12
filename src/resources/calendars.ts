@@ -48,6 +48,15 @@ export class CalendarsClient {
     await this.client.request<void>('DELETE', `/v1/calendars/${id}`, undefined, undefined, options);
   }
 
+  /**
+   * Regenerate the calendar's iCal subscribe URL. The old URL stops working
+   * (copies cached elsewhere can be served for up to 5 minutes); returns the
+   * calendar with its new `ical_url`. Organization keys only.
+   */
+  async rotateIcalToken(id: string, options?: RequestOptions): Promise<Calendar> {
+    return this.client.request<Calendar>('POST', `/v1/calendars/${id}/ical-token/rotate`, undefined, undefined, options);
+  }
+
   async getContext(id: string, options?: RequestOptions): Promise<CalendarContext> {
     return this.client.request<CalendarContext>(
       'GET', `/v1/calendars/${id}/context`, undefined, undefined, options,

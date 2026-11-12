@@ -6,12 +6,16 @@ import {
   NotFoundError,
   ValidationError,
   QuotaExceededError,
+  PlanRequiredError,
   TimeoutError,
   ConnectionError,
 } from './error';
 import { APIPromise } from './api-promise';
 import type { QuotaSnapshot, RawResponse } from './api-promise';
 import type { ChronaryConfig, LogLevel, RequestOptions, ApiErrorBody } from './types';
+
+/** A query parameter value; an array is sent as repeated parameters (`?k=a&k=b`). */
+export type QueryValue = string | number | boolean | undefined | readonly string[];
 
 const DEFAULT_BASE_URL = 'https://api.chronary.ai';
 const DEFAULT_TIMEOUT = 30_000;
@@ -65,7 +69,7 @@ export class CoreClient {
     // as AuthenticationError — same error shape either way.
     this.apiKey = config.apiKey ?? getEnvVar('CHRONARY_API_KEY') ?? '';
 
-    this.baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+    this.baseUrl = stripTrailingSlashes(config.baseUrl ?? DEFAULT_BASE_URL);
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.logLevel = resolveLogLevel(config);
@@ -102,7 +106,7 @@ export class CoreClient {
     method: string,
     path: string,
     body?: unknown,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, QueryValue>,
     options?: RequestOptions,
   ): APIPromise<T> {
     return new APIPromise<T>(this._request<T>(method, path, body, query, options));
@@ -112,7 +116,7 @@ export class CoreClient {
     method: string,
     path: string,
     body?: unknown,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, QueryValue>,
     options?: RequestOptions,
   ): Promise<{ data: T; rawResponse: RawResponse }> {
     const url = this.buildUrl(path, query);
@@ -213,13 +217,18 @@ export class CoreClient {
     throw lastError ?? new ConnectionError('Request failed after retries');
   }
 
-  private buildUrl(path: string, query?: Record<string, string | number | boolean | undefined>): string {
+  private buildUrl(path: string, query?: Record<string, QueryValue>): string {
     const base = `${this.baseUrl}${path}`;
     if (!query) return base;
 
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(query)) {
-      if (value !== undefined) params.set(key, String(value));
+      if (value === undefined) continue;
+      if (Array.isArray(value)) {
+        for (const v of value) params.append(key, v);
+      } else {
+        params.set(key, String(value));
+      }
     }
     const qs = params.toString();
     return qs ? `${base}?${qs}` : base;
@@ -236,29 +245,35 @@ export class CoreClient {
     const message = errorBody?.error?.message ?? `HTTP ${response.status}`;
     const rid = requestId ?? errorBody?.error?.request_id;
     const errorType = errorBody?.error?.type;
+    const body = errorBody?.error as Record<string, unknown> | undefined;
 
     switch (response.status) {
       case 400:
         if (errorType === 'validation_error') {
-          return new ValidationError(message, response.status, rid, response.headers);
+          return new ValidationError(message, response.status, rid, response.headers, body);
         }
-        return new ChronaryError(message, response.status, rid, response.headers, errorType);
+        return new ChronaryError(message, response.status, rid, response.headers, errorType, body);
       case 401:
-        return new AuthenticationError(message, rid, response.headers);
+        return new AuthenticationError(message, rid, response.headers, body);
       case 402:
-        return new QuotaExceededError(message, rid, response.headers);
+        return new QuotaExceededError(message, rid, response.headers, body, 402);
+      case 403:
+        if (errorType === 'plan_required') {
+          return new PlanRequiredError(message, rid, response.headers, body);
+        }
+        return new ChronaryError(message, response.status, rid, response.headers, errorType, body);
       case 404:
-        return new NotFoundError(message, rid, response.headers);
+        return new NotFoundError(message, rid, response.headers, body);
       case 422:
-        return new ValidationError(message, response.status, rid, response.headers);
+        return new ValidationError(message, response.status, rid, response.headers, body);
       case 429: {
         if (errorType === 'quota_exceeded') {
-          return new QuotaExceededError(message, rid, response.headers);
+          return new QuotaExceededError(message, rid, response.headers, body, 429);
         }
-        return new RateLimitError(message, rid, response.headers);
+        return new RateLimitError(message, rid, response.headers, body);
       }
       default:
-        return new ChronaryError(message, response.status, rid, response.headers, errorType);
+        return new ChronaryError(message, response.status, rid, response.headers, errorType, body);
     }
   }
 
@@ -309,10 +324,35 @@ function parseQuotaSnapshot(headers: Headers): QuotaSnapshot | undefined {
 }
 
 function parseStructuredParam(header: string, key: string): number | undefined {
-  // Match `;<key>=<digits>` — guards against partial matches inside other tokens.
-  const re = new RegExp(`(?:^|;)\\s*${key}=(-?\\d+)(?:;|$)`);
-  const match = re.exec(header);
-  if (!match) return undefined;
-  const n = Number(match[1]);
-  return Number.isFinite(n) ? n : undefined;
+  // Find the first `;`-separated member `<key>=<digits>` (leading whitespace
+  // allowed). A bounded split-and-compare, not a regex, so the cost stays
+  // linear in the header length whatever the server sends.
+  const prefix = `${key}=`;
+  for (const member of header.split(';')) {
+    const trimmed = member.trimStart();
+    if (!trimmed.startsWith(prefix)) continue;
+    const value = trimmed.slice(prefix.length);
+    if (!isSignedInteger(value)) continue;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+}
+
+/** `-?\d+` exactly (ASCII digits), checked without a regex. */
+function isSignedInteger(value: string): boolean {
+  const start = value.startsWith('-') ? 1 : 0;
+  if (value.length === start) return false;
+  for (let i = start; i < value.length; i++) {
+    const c = value.charCodeAt(i);
+    if (c < 48 || c > 57) return false;
+  }
+  return true;
+}
+
+/** Drops every trailing `/`, with a linear scan rather than a regex. */
+function stripTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url.charCodeAt(end - 1) === 47) end--;
+  return url.slice(0, end);
 }

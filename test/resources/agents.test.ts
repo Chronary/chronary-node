@@ -63,6 +63,24 @@ describe('AgentsClient', () => {
     expect(url).toContain('limit=10');
   });
 
+  it('list passes search, sort and include params', async () => {
+    const fetch = mockFetch([
+      { status: 200, body: { data: [{ ...AGENT, calendar_count: 1, scoped_key_count: 0 }], total: 1, limit: 50, offset: 0, next_cursor: null } },
+    ]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const items = [];
+    for await (const agent of client.agents.list({ q: 'sales', sort: 'name', include_decommissioned: true, include_counts: true })) {
+      items.push(agent);
+    }
+    const url = fetch.mock.calls[0][0] as string;
+    expect(url).toContain('q=sales');
+    expect(url).toContain('sort=name');
+    expect(url).toContain('include_decommissioned=true');
+    expect(url).toContain('include_counts=true');
+    expect(items[0].calendar_count).toBe(1);
+  });
+
   it('list starts iteration at the supplied offset', async () => {
     const fetch = mockFetch([
       { status: 200, body: { data: [AGENT], total: 11, limit: 10, offset: 10 } },

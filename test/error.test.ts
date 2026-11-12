@@ -6,6 +6,7 @@ import {
   NotFoundError,
   ValidationError,
   QuotaExceededError,
+  PlanRequiredError,
   TimeoutError,
   ConnectionError,
 } from '../src/error';
@@ -56,7 +57,41 @@ describe('Error hierarchy', () => {
 
   it('QuotaExceededError', () => {
     const err = new QuotaExceededError('Limit reached', 'req_4');
-    expect(err.status).toBe(402);
+    expect(err.status).toBe(429);
+    expect(new QuotaExceededError('Legacy', 'req_4', undefined, undefined, 402).status).toBe(402);
+  });
+
+  it('QuotaExceededError exposes metric, limit and upgradeUrl from the body', () => {
+    const err = new QuotaExceededError('Limit reached', 'req_4', undefined, {
+      metric: 'api_calls', limit: 50000, upgrade_url: 'https://console.test/settings/billing',
+    });
+    expect(err.metric).toBe('api_calls');
+    expect(err.limit).toBe(50000);
+    expect(err.upgradeUrl).toBe('https://console.test/settings/billing');
+  });
+
+  it('QuotaExceededError exposes upgradePlan from the body', () => {
+    const err = new QuotaExceededError('Limit reached', 'req_4', undefined, {
+      metric: 'api_calls', limit: 50000, upgrade_url: 'https://console.test/settings/billing', upgrade_plan: 'developer',
+    });
+    expect(err.upgradePlan).toBe('developer');
+  });
+
+  it('PlanRequiredError exposes upgradeUrl and plan fields', () => {
+    const body = {
+      type: 'plan_required', required_plan: 'pro', feature: 'scoped_keys',
+      upgrade_url: 'https://console.test/settings/billing', docs_url: 'https://docs.test/plans', contact_url: 'https://x.test/c',
+    };
+    const err = new PlanRequiredError('Pro required', 'req_5', undefined, body);
+    expect(err).toBeInstanceOf(ChronaryError);
+    expect(err.status).toBe(403);
+    expect(err.errorType).toBe('plan_required');
+    expect(err.upgradeUrl).toBe('https://console.test/settings/billing');
+    expect(err.docsUrl).toBe('https://docs.test/plans');
+    expect(err.requiredPlan).toBe('pro');
+    expect(err.feature).toBe('scoped_keys');
+    expect(err.contactUrl).toBe('https://x.test/c');
+    expect(err.body).toBe(body);
   });
 
   it('TimeoutError has status 0', () => {

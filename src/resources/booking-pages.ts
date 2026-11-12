@@ -5,6 +5,8 @@ import type {
   CreateBookingPageParams,
   UpdateBookingPageParams,
   ListBookingPagesParams,
+  ListBookingsParams,
+  BookingList,
   BookingSlotsResponse,
   SubmitBookingParams,
   BookingSubmissionResult,
@@ -24,10 +26,11 @@ export class BookingPagesClient {
   }
 
   list(params: ListBookingPagesParams = {}): PageIterator<BookingPage> {
-    const { limit = 50, offset = 0 } = params;
+    const { limit = 50, offset = 0, ...filters } = params;
     return new PageIterator<BookingPage>(
       (offset, l) =>
         this.client.request<PageResponse<BookingPage>>('GET', '/v1/booking-pages', undefined, {
+          ...filters,
           limit: l,
           offset,
         }),
@@ -42,6 +45,24 @@ export class BookingPagesClient {
 
   async delete(id: string, options?: RequestOptions): Promise<void> {
     await this.client.request<void>('DELETE', `/v1/booking-pages/${id}`, undefined, undefined, options);
+  }
+
+  /**
+   * One page of the bookings made through a booking page, newest start first,
+   * with the invitee's details. Pass the returned `next_cursor` as `cursor`
+   * for the next page (null on the last page). Bookings made before this
+   * endpoint was released are not linked to their page.
+   */
+  async listBookings(id: string, params: ListBookingsParams = {}, options?: RequestOptions): Promise<BookingList> {
+    return this.client.request<BookingList>('GET', `/v1/booking-pages/${id}/bookings`, undefined, { ...params }, options);
+  }
+
+  /**
+   * Replace the page's public link. The old `/book/<slug>` stops working at
+   * once; returns the page with its new `slug` and `booking_url`.
+   */
+  async rotateSlug(id: string, options?: RequestOptions): Promise<BookingPage> {
+    return this.client.request<BookingPage>('POST', `/v1/booking-pages/${id}/rotate-slug`, undefined, undefined, options);
   }
 
   /**
