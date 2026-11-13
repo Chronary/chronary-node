@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient, QueryValue } from '../client';
 import { PageIterator } from '../pagination';
 import type {
@@ -20,11 +21,11 @@ import type {
 export class WebhooksClient {
   constructor(private readonly client: CoreClient) {}
 
-  async create(params: CreateWebhookParams, options?: RequestOptions): Promise<Webhook> {
+  create(params: CreateWebhookParams, options?: RequestOptions): APIPromise<Webhook> {
     return this.client.request<Webhook>('POST', '/v1/webhooks', params, undefined, options);
   }
 
-  async get(id: string, options?: RequestOptions): Promise<Webhook> {
+  get(id: string, options?: RequestOptions): APIPromise<Webhook> {
     return this.client.request<Webhook>('GET', `/v1/webhooks/${id}`, undefined, undefined, options);
   }
 
@@ -42,19 +43,19 @@ export class WebhooksClient {
     );
   }
 
-  async update(id: string, params: UpdateWebhookParams, options?: RequestOptions): Promise<Webhook> {
+  update(id: string, params: UpdateWebhookParams, options?: RequestOptions): APIPromise<Webhook> {
     return this.client.request<Webhook>('PATCH', `/v1/webhooks/${id}`, params, undefined, options);
   }
 
-  async delete(id: string, options?: RequestOptions): Promise<void> {
-    await this.client.request<void>('DELETE', `/v1/webhooks/${id}`, undefined, undefined, options);
+  delete(id: string, options?: RequestOptions): APIPromise<void> {
+    return this.client.request<void>('DELETE', `/v1/webhooks/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
   }
 
-  async listDeliveries(
+  listDeliveries(
     webhookId: string,
     params: ListWebhookDeliveriesParams = {},
     options?: RequestOptions,
-  ): Promise<WebhookDeliveryListResponse> {
+  ): APIPromise<WebhookDeliveryListResponse> {
     const { limit = 20, offset = 0, ...filters } = params;
     const query: Record<string, QueryValue> = { limit, offset };
     for (const [key, value] of Object.entries(filters)) {
@@ -70,11 +71,11 @@ export class WebhooksClient {
   }
 
   /** One delivery with its payload and every attempt, oldest first. */
-  async getDelivery(
+  getDelivery(
     webhookId: string,
     deliveryId: string,
     options?: RequestOptions,
-  ): Promise<WebhookDeliveryDetail> {
+  ): APIPromise<WebhookDeliveryDetail> {
     return this.client.request<WebhookDeliveryDetail>(
       'GET',
       `/v1/webhooks/${webhookId}/deliveries/${deliveryId}`,
@@ -90,11 +91,11 @@ export class WebhooksClient {
    * attempt and does not count toward the monthly quota. Poll `getDelivery`
    * with the returned `delivery_id` for the result. Limited to 10 per minute.
    */
-  async sendTest(
+  sendTest(
     webhookId: string,
     params: SendTestWebhookParams,
     options?: RequestOptions,
-  ): Promise<WebhookTestSent> {
+  ): APIPromise<WebhookTestSent> {
     return this.client.request<WebhookTestSent>(
       'POST',
       `/v1/webhooks/${webhookId}/test`,
@@ -113,11 +114,11 @@ export class WebhooksClient {
    * `Idempotency-Key` (generated, or `options.idempotencyKey`), so a retry
    * returns the same replay. Limited to 30 per minute.
    */
-  async replayDelivery(
+  replayDelivery(
     webhookId: string,
     deliveryId: string,
     options?: RequestOptions,
-  ): Promise<WebhookReplaySent> {
+  ): APIPromise<WebhookReplaySent> {
     return this.client.request<WebhookReplaySent>(
       'POST',
       `/v1/webhooks/${webhookId}/deliveries/${deliveryId}/replay`,
@@ -134,11 +135,11 @@ export class WebhooksClient {
    * (default `24h`; `now` drops it at once), so receivers can switch
    * without rejecting deliveries. `verifySignature` accepts either header.
    */
-  async rotateSecret(
+  rotateSecret(
     webhookId: string,
     params: RotateWebhookSecretParams = {},
     options?: RequestOptions,
-  ): Promise<RotatedWebhookSecret> {
+  ): APIPromise<RotatedWebhookSecret> {
     return this.client.request<RotatedWebhookSecret>(
       'POST',
       `/v1/webhooks/${webhookId}/secret/rotate`,

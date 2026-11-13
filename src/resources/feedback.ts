@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import type {
   FeedbackAcceptedResponse,
@@ -16,10 +17,10 @@ export class FeedbackClient {
    * HTTP 429 with a `Retry-After` header set to the seconds until the
    * next UTC midnight.
    */
-  async submit(
+  submit(
     params: SubmitFeedbackParams,
     options?: RequestOptions,
-  ): Promise<FeedbackAcceptedResponse> {
+  ): APIPromise<FeedbackAcceptedResponse> {
     return this.client.request<FeedbackAcceptedResponse>(
       'POST',
       '/v1/feedback',

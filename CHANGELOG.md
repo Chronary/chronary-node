@@ -2,7 +2,12 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
-## 0.9.0 — Unreleased
+## 0.10.0 — Unreleased
+
+- `client.usage.get()` types the two fields the API already returned: `webhook_endpoints` (`{ used, limit }`, registered webhook endpoints vs. the plan cap) and `scoped_keys` (`{ count, limit }`, active agent-scoped keys). Add the `ScopedKeysUsage` type and export `HoldsUsage` and `CrossCalendarQueriesUsage`. A new test fails when the API's `Usage` response gains a field the SDK type lacks (#1995).
+- Every single-request resource method now returns an `APIPromise<T>`, so `.withResponse()` works on them as documented: `const { data, response } = await client.agents.get('agt_1').withResponse()` gives the status, headers and parsed `response.quota`. `APIPromise` is now a real `Promise` subclass, so `await`, `Promise.all` and `Promise<T>` annotations work as before. The auto-paginating `list()` helpers still return a `PageIterator` (#2002).
+
+## 0.9.0
 
 - A 429 `quota_exceeded` (a monthly plan limit) is no longer retried: the request rejects with `QuotaExceededError` at once instead of sleeping on `Retry-After` and asking again. A rate-limit 429 still retries, waiting at most 60 seconds (#1936).
 - Add the `developer` plan: `PlanId` includes it, `Plan.annual_price`, `BillingSummary.pending_plan` / `pending_plan_interval` / `pending_plan_at`, `BillingUpgradeOption.plan` (`developer` | `pro`) and `via`, `UpgradeRequest.plan`. Errors expose `upgradePlan` (the plan `upgradeUrl` leads to). Additive; `BillingSummary.plan` stays a plain string (#1911).

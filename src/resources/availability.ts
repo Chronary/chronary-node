@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import type {
   AvailabilityParams,
@@ -10,7 +11,7 @@ import type {
 export class AvailabilityClient {
   constructor(private readonly client: CoreClient) {}
 
-  async forAgent(agentId: string, params: AvailabilityParams, options?: RequestOptions): Promise<AvailabilityResponse> {
+  forAgent(agentId: string, params: AvailabilityParams, options?: RequestOptions): APIPromise<AvailabilityResponse> {
     return this.client.request<AvailabilityResponse>(
       'GET', `/v1/agents/${agentId}/availability`, undefined,
       {
@@ -25,7 +26,7 @@ export class AvailabilityClient {
     );
   }
 
-  async forCalendar(calendarId: string, params: AvailabilityParams, options?: RequestOptions): Promise<CalendarAvailabilityResponse> {
+  forCalendar(calendarId: string, params: AvailabilityParams, options?: RequestOptions): APIPromise<CalendarAvailabilityResponse> {
     return this.client.request<CalendarAvailabilityResponse>(
       'GET', `/v1/calendars/${calendarId}/availability`, undefined,
       {
@@ -40,7 +41,7 @@ export class AvailabilityClient {
     );
   }
 
-  async check(params: CrossAgentAvailabilityParams, options?: RequestOptions): Promise<AvailabilityResponse> {
+  check(params: CrossAgentAvailabilityParams, options?: RequestOptions): APIPromise<AvailabilityResponse> {
     return this.client.request<AvailabilityResponse>(
       'GET', '/v1/availability', undefined,
       {

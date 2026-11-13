@@ -106,6 +106,84 @@ describe('APIPromise', () => {
     expect(typeof result.finally).toBe('function');
   });
 
+  it('is a real Promise subclass', async () => {
+    const fetch = mockFetch([{ status: 200, body: { id: 'agt_1' } }]);
+    const client = new CoreClient(clientConfig(fetch));
+
+    const result = client.request<{ id: string }>('GET', '/v1/agents/agt_1');
+    expect(result).toBeInstanceOf(Promise);
+    const typed: Promise<{ id: string }> = result;
+    expect(await typed).toEqual({ id: 'agt_1' });
+  });
+
+  it('derives plain Promises from then/catch/finally', async () => {
+    const fetch = mockFetch([{ status: 200, body: { id: 'agt_1' } }]);
+    const client = new CoreClient(clientConfig(fetch));
+
+    const result = client.request<{ id: string }>('GET', '/v1/agents/agt_1');
+    const chained = result.then((agent) => agent.id);
+    expect(chained).not.toBeInstanceOf(APIPromise);
+    expect(await chained).toBe('agt_1');
+    expect(await result.catch(() => 'never')).toEqual({ id: 'agt_1' });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs finally handlers on fulfilment and on rejection', async () => {
+    const fetch = mockFetch([
+      { status: 200, body: { id: 'agt_1' } },
+      { status: 404, body: { error: { type: 'not_found', message: 'Not found' } } },
+    ]);
+    const client = new CoreClient(clientConfig(fetch));
+    let calls = 0;
+
+    expect(await client.request('GET', '/v1/agents/agt_1').finally(() => { calls++; })).toEqual({ id: 'agt_1' });
+    await expect(client.request('GET', '/v1/agents/nope').finally(() => { calls++; })).rejects.toThrow('Not found');
+    expect(calls).toBe(2);
+  });
+
+  it('catches errors with catch()', async () => {
+    const fetch = mockFetch([{ status: 404, body: { error: { type: 'not_found', message: 'Not found' } } }]);
+    const client = new CoreClient(clientConfig(fetch));
+
+    const recovered = await client.request('GET', '/v1/agents/nope').catch((err: unknown) => (err as Error).message);
+    expect(recovered).toBe('Not found');
+  });
+
+  describe('_thenUnwrap', () => {
+    it('maps the data and keeps the raw response', async () => {
+      const fetch = mockFetch([{
+        status: 200,
+        body: { keys: [{ id: 'key_1' }] },
+        headers: { 'x-request-id': 'req_keys' },
+      }]);
+      const client = new CoreClient(clientConfig(fetch));
+
+      const keys = client.request<{ keys: Array<{ id: string }> }>('GET', '/v1/keys')._thenUnwrap((r) => r.keys);
+      expect(keys).toBeInstanceOf(APIPromise);
+      const { data, response } = await keys.withResponse();
+      expect(data).toEqual([{ id: 'key_1' }]);
+      expect(response.headers.get('x-request-id')).toBe('req_keys');
+    });
+
+    it('resolves to the mapped data when awaited', async () => {
+      const fetch = mockFetch([{ status: 200, body: { keys: [{ id: 'key_1' }] } }]);
+      const client = new CoreClient(clientConfig(fetch));
+
+      const keys = await client.request<{ keys: Array<{ id: string }> }>('GET', '/v1/keys')._thenUnwrap((r) => r.keys);
+      expect(keys).toEqual([{ id: 'key_1' }]);
+    });
+
+    it('propagates errors without calling the transform', async () => {
+      const fetch = mockFetch([{ status: 404, body: { error: { type: 'not_found', message: 'Not found' } } }]);
+      const client = new CoreClient(clientConfig(fetch));
+      let called = false;
+
+      const mapped = client.request('GET', '/v1/keys')._thenUnwrap(() => { called = true; });
+      await expect(mapped).rejects.toThrow('Not found');
+      expect(called).toBe(false);
+    });
+  });
+
   describe('typed quota snapshot (RawResponse.quota)', () => {
     it('parses IETF RateLimit + RateLimit-Policy headers into quota snapshot', async () => {
       const fetch = mockFetch([{

@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import { PageIterator } from '../pagination';
 import type {
@@ -16,7 +17,7 @@ import type {
 export class SchedulingClient {
   constructor(private readonly client: CoreClient) {}
 
-  async create(params: CreateProposalParams, options?: RequestOptions): Promise<ProposalSummary> {
+  create(params: CreateProposalParams, options?: RequestOptions): APIPromise<ProposalSummary> {
     return this.client.request<ProposalSummary>(
       'POST', '/v1/scheduling/proposals', params, undefined, options,
     );
@@ -35,29 +36,29 @@ export class SchedulingClient {
     );
   }
 
-  async get(id: string, options?: RequestOptions): Promise<Proposal> {
+  get(id: string, options?: RequestOptions): APIPromise<Proposal> {
     return this.client.request<Proposal>(
       'GET', `/v1/scheduling/proposals/${id}`, undefined, undefined, options,
     );
   }
 
-  async respond(
+  respond(
     id: string,
     params: RespondToProposalParams,
     options?: RequestOptions,
-  ): Promise<ProposalResponse> {
+  ): APIPromise<ProposalResponse> {
     return this.client.request<ProposalResponse>(
       'POST', `/v1/scheduling/proposals/${id}/respond`, params, undefined, options,
     );
   }
 
-  async resolve(id: string, options?: RequestOptions): Promise<ResolveProposalResponse> {
+  resolve(id: string, options?: RequestOptions): APIPromise<ResolveProposalResponse> {
     return this.client.request<ResolveProposalResponse>(
       'POST', `/v1/scheduling/proposals/${id}/resolve`, undefined, undefined, options,
     );
   }
 
-  async cancel(id: string, options?: RequestOptions): Promise<CancelProposalResponse> {
+  cancel(id: string, options?: RequestOptions): APIPromise<CancelProposalResponse> {
     return this.client.request<CancelProposalResponse>(
       'POST', `/v1/scheduling/proposals/${id}/cancel`, undefined, undefined, options,
     );

@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import type { PlansListResponse, RequestOptions } from '../types';
 
@@ -11,7 +12,7 @@ export class PlansClient {
    * tier with `custom_pricing: true`. No authentication required.
    * Responses are cacheable for 5 minutes at the edge.
    */
-  async list(options?: RequestOptions): Promise<PlansListResponse> {
+  list(options?: RequestOptions): APIPromise<PlansListResponse> {
     return this.client.request<PlansListResponse>('GET', '/v1/plans', undefined, undefined, options);
   }
 }

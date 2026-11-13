@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import type { AcceptTermsParams, AcceptTermsResult, RequestOptions } from '../types';
 
@@ -16,7 +17,7 @@ export class TermsClient {
    * keys cannot accept org-wide terms (403). A stale version returns 409
    * `tos_version_stale` with the current version in the error body.
    */
-  async accept(params: AcceptTermsParams, options?: RequestOptions): Promise<AcceptTermsResult> {
+  accept(params: AcceptTermsParams, options?: RequestOptions): APIPromise<AcceptTermsResult> {
     return this.client.request<AcceptTermsResult>(
       'POST',
       '/v1/terms/accept',

@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import type { DataExport, RequestOptions } from '../types';
 
@@ -20,7 +21,7 @@ export class AccountClient {
    *
    * **Rate limit:** 10 exports/hour/org.
    */
-  async export(options?: RequestOptions): Promise<DataExport> {
+  export(options?: RequestOptions): APIPromise<DataExport> {
     return this.client.request<DataExport>(
       'GET',
       '/v1/auth/export',

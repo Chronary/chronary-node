@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import { PageIterator } from '../pagination';
 import type {
@@ -17,11 +18,11 @@ import type {
 export class BookingPagesClient {
   constructor(private readonly client: CoreClient) {}
 
-  async create(params: CreateBookingPageParams, options?: RequestOptions): Promise<BookingPage> {
+  create(params: CreateBookingPageParams, options?: RequestOptions): APIPromise<BookingPage> {
     return this.client.request<BookingPage>('POST', '/v1/booking-pages', params, undefined, options);
   }
 
-  async get(id: string, options?: RequestOptions): Promise<BookingPage> {
+  get(id: string, options?: RequestOptions): APIPromise<BookingPage> {
     return this.client.request<BookingPage>('GET', `/v1/booking-pages/${id}`, undefined, undefined, options);
   }
 
@@ -39,12 +40,12 @@ export class BookingPagesClient {
     );
   }
 
-  async update(id: string, params: UpdateBookingPageParams, options?: RequestOptions): Promise<BookingPage> {
+  update(id: string, params: UpdateBookingPageParams, options?: RequestOptions): APIPromise<BookingPage> {
     return this.client.request<BookingPage>('PATCH', `/v1/booking-pages/${id}`, params, undefined, options);
   }
 
-  async delete(id: string, options?: RequestOptions): Promise<void> {
-    await this.client.request<void>('DELETE', `/v1/booking-pages/${id}`, undefined, undefined, options);
+  delete(id: string, options?: RequestOptions): APIPromise<void> {
+    return this.client.request<void>('DELETE', `/v1/booking-pages/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
   }
 
   /**
@@ -53,7 +54,7 @@ export class BookingPagesClient {
    * for the next page (null on the last page). Bookings made before this
    * endpoint was released are not linked to their page.
    */
-  async listBookings(id: string, params: ListBookingsParams = {}, options?: RequestOptions): Promise<BookingList> {
+  listBookings(id: string, params: ListBookingsParams = {}, options?: RequestOptions): APIPromise<BookingList> {
     return this.client.request<BookingList>('GET', `/v1/booking-pages/${id}/bookings`, undefined, { ...params }, options);
   }
 
@@ -61,7 +62,7 @@ export class BookingPagesClient {
    * Replace the page's public link. The old `/book/<slug>` stops working at
    * once; returns the page with its new `slug` and `booking_url`.
    */
-  async rotateSlug(id: string, options?: RequestOptions): Promise<BookingPage> {
+  rotateSlug(id: string, options?: RequestOptions): APIPromise<BookingPage> {
     return this.client.request<BookingPage>('POST', `/v1/booking-pages/${id}/rotate-slug`, undefined, undefined, options);
   }
 
@@ -70,7 +71,7 @@ export class BookingPagesClient {
    * required for this endpoint (the slug is the credential); any key set on the
    * client is simply ignored by the server.
    */
-  async listSlots(slug: string, params: { from?: string; to?: string } = {}, options?: RequestOptions): Promise<BookingSlotsResponse> {
+  listSlots(slug: string, params: { from?: string; to?: string } = {}, options?: RequestOptions): APIPromise<BookingSlotsResponse> {
     return this.client.request<BookingSlotsResponse>('GET', `/book/${slug}/slots`, undefined, params, options);
   }
 
@@ -79,7 +80,7 @@ export class BookingPagesClient {
    * on the underlying calendar and fires an `event.created` webhook with a
    * `booking_page_id` correlation field.
    */
-  async submit(slug: string, params: SubmitBookingParams, options?: RequestOptions): Promise<BookingSubmissionResult> {
+  submit(slug: string, params: SubmitBookingParams, options?: RequestOptions): APIPromise<BookingSubmissionResult> {
     return this.client.request<BookingSubmissionResult>('POST', `/book/${slug}`, params, undefined, options);
   }
 }

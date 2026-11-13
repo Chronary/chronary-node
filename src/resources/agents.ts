@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import { PageIterator } from '../pagination';
 import type {
@@ -16,11 +17,11 @@ export class AgentsClient {
    * Register your agent with Chronary. Creates a Chronary identity for an agent
    * that already exists in your system, so it can own calendars, events, and webhooks.
    */
-  async create(params: CreateAgentParams, options?: RequestOptions): Promise<Agent> {
+  create(params: CreateAgentParams, options?: RequestOptions): APIPromise<Agent> {
     return this.client.request<Agent>('POST', '/v1/agents', params, undefined, options);
   }
 
-  async get(id: string, options?: RequestOptions): Promise<Agent> {
+  get(id: string, options?: RequestOptions): APIPromise<Agent> {
     return this.client.request<Agent>('GET', `/v1/agents/${id}`, undefined, undefined, options);
   }
 
@@ -38,11 +39,11 @@ export class AgentsClient {
     );
   }
 
-  async update(id: string, params: UpdateAgentParams, options?: RequestOptions): Promise<Agent> {
+  update(id: string, params: UpdateAgentParams, options?: RequestOptions): APIPromise<Agent> {
     return this.client.request<Agent>('PATCH', `/v1/agents/${id}`, params, undefined, options);
   }
 
-  async delete(id: string, options?: RequestOptions): Promise<void> {
-    await this.client.request<void>('DELETE', `/v1/agents/${id}`, undefined, undefined, options);
+  delete(id: string, options?: RequestOptions): APIPromise<void> {
+    return this.client.request<void>('DELETE', `/v1/agents/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
   }
 }

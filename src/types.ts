@@ -943,6 +943,15 @@ export interface CrossCalendarQueriesUsage {
   used: number;
 }
 
+/**
+ * Active agent-scoped (`chr_ak_*`) keys. `count` is a direct count (the name
+ * predates the plan cap); `limit` is the plan cap (`null` = unlimited).
+ */
+export interface ScopedKeysUsage {
+  count: number;
+  limit: number | null;
+}
+
 export interface Usage {
   period_start: string;
   period_end: string;
@@ -955,7 +964,10 @@ export interface Usage {
   calendars: UsageMetric;
   events: UsageMetric;
   api_calls: UsageMetric;
+  /** Webhook deliveries this month. */
   webhooks: UsageMetric;
+  /** Registered webhook endpoints vs. the plan cap (null = unlimited). */
+  webhook_endpoints: UsageMetric;
   availability_queries: UsageMetric;
   ical_subscriptions: UsageMetric;
   proposals: UsageMetric;
@@ -963,6 +975,8 @@ export interface Usage {
   recurring_events: UsageMetric;
   /** Active booking pages vs. the plan cap (free: 1, Pro: 25; null = unlimited). */
   booking_pages: UsageMetric;
+  /** Active agent-scoped keys vs. the plan cap. */
+  scoped_keys: ScopedKeysUsage;
   holds: HoldsUsage;
   cross_calendar_queries: CrossCalendarQueriesUsage;
 }

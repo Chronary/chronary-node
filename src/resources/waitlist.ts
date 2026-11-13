@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import type {
   WaitlistJoinParams,
@@ -26,10 +27,10 @@ export class WaitlistClient {
    * @throws ChronaryError (429 `rate_limit_error`) on the per-IP / per-email
    *   waitlist limiter.
    */
-  async join(
+  join(
     params: WaitlistJoinParams,
     options?: RequestOptions,
-  ): Promise<WaitlistJoinResponse> {
+  ): APIPromise<WaitlistJoinResponse> {
     return this.client.request<WaitlistJoinResponse>(
       'POST',
       '/v1/waitlist',

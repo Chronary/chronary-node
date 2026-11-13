@@ -74,6 +74,16 @@ Chronary enforces a per-key rate limit and per-org monthly quotas that vary by p
 
 Pro-only feature calls return `403` with an upgrade hint on Free. See the full matrix and rate-limit handling guidance at <https://docs.chronary.ai/resources/rate-limits/>.
 
+## Response headers and quota
+
+Every single-request method returns an `APIPromise`: `await` it for the data, or call `.withResponse()` to also get the status, headers and parsed quota headers. The auto-paginating `list()` helpers return a `PageIterator` instead.
+
+```ts
+const { data: agent, response } = await client.agents.get('agt_1').withResponse();
+console.log(response.headers.get('x-request-id'));
+console.log(response.quota?.remaining, response.quota?.resetAt);
+```
+
 ## Webhook Verification
 
 ```ts

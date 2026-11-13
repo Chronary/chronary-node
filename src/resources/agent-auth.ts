@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import type {
   AgentSignUpParams,
@@ -30,10 +31,10 @@ export class AgentAuthClient {
    *   the currently-published version — retry with the value from the
    *   `current_version` field on the error body.
    */
-  async signUp(
+  signUp(
     params: AgentSignUpParams,
     options?: RequestOptions,
-  ): Promise<AgentSignUpResponse> {
+  ): APIPromise<AgentSignUpResponse> {
     return this.client.request<AgentSignUpResponse>(
       'POST',
       '/v1/agent/sign-up',
@@ -55,10 +56,10 @@ export class AgentAuthClient {
    *   API returns 400 for invalid/expired OTPs, which surfaces as a
    *   generic `ChronaryError` with the original message.
    */
-  async verify(
+  verify(
     params: AgentVerifyParams,
     options?: RequestOptions,
-  ): Promise<AgentVerifyResponse> {
+  ): APIPromise<AgentVerifyResponse> {
     return this.client.request<AgentVerifyResponse>(
       'POST',
       '/v1/agent/verify',

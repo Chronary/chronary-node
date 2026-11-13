@@ -1,3 +1,4 @@
+import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import { PageIterator } from '../pagination';
 import type {
@@ -15,13 +16,13 @@ import type {
 export class CalendarsClient {
   constructor(private readonly client: CoreClient) {}
 
-  async create(params: CreateCalendarParams & { agentId?: string }, options?: RequestOptions): Promise<Calendar> {
+  create(params: CreateCalendarParams & { agentId?: string }, options?: RequestOptions): APIPromise<Calendar> {
     const { agentId, ...body } = params;
     const path = agentId ? `/v1/agents/${agentId}/calendars` : '/v1/calendars';
     return this.client.request<Calendar>('POST', path, body, undefined, options);
   }
 
-  async get(id: string, options?: RequestOptions): Promise<Calendar> {
+  get(id: string, options?: RequestOptions): APIPromise<Calendar> {
     return this.client.request<Calendar>('GET', `/v1/calendars/${id}`, undefined, undefined, options);
   }
 
@@ -40,12 +41,12 @@ export class CalendarsClient {
     );
   }
 
-  async update(id: string, params: UpdateCalendarParams, options?: RequestOptions): Promise<Calendar> {
+  update(id: string, params: UpdateCalendarParams, options?: RequestOptions): APIPromise<Calendar> {
     return this.client.request<Calendar>('PATCH', `/v1/calendars/${id}`, params, undefined, options);
   }
 
-  async delete(id: string, options?: RequestOptions): Promise<void> {
-    await this.client.request<void>('DELETE', `/v1/calendars/${id}`, undefined, undefined, options);
+  delete(id: string, options?: RequestOptions): APIPromise<void> {
+    return this.client.request<void>('DELETE', `/v1/calendars/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
   }
 
   /**
@@ -53,35 +54,35 @@ export class CalendarsClient {
    * (copies cached elsewhere can be served for up to 5 minutes); returns the
    * calendar with its new `ical_url`. Organization keys only.
    */
-  async rotateIcalToken(id: string, options?: RequestOptions): Promise<Calendar> {
+  rotateIcalToken(id: string, options?: RequestOptions): APIPromise<Calendar> {
     return this.client.request<Calendar>('POST', `/v1/calendars/${id}/ical-token/rotate`, undefined, undefined, options);
   }
 
-  async getContext(id: string, options?: RequestOptions): Promise<CalendarContext> {
+  getContext(id: string, options?: RequestOptions): APIPromise<CalendarContext> {
     return this.client.request<CalendarContext>(
       'GET', `/v1/calendars/${id}/context`, undefined, undefined, options,
     );
   }
 
-  async setAvailabilityRules(
+  setAvailabilityRules(
     id: string,
     params: SetAvailabilityRulesParams,
     options?: RequestOptions,
-  ): Promise<AvailabilityRules> {
+  ): APIPromise<AvailabilityRules> {
     return this.client.request<AvailabilityRules>(
       'PUT', `/v1/calendars/${id}/availability-rules`, params, undefined, options,
     );
   }
 
-  async getAvailabilityRules(id: string, options?: RequestOptions): Promise<AvailabilityRules> {
+  getAvailabilityRules(id: string, options?: RequestOptions): APIPromise<AvailabilityRules> {
     return this.client.request<AvailabilityRules>(
       'GET', `/v1/calendars/${id}/availability-rules`, undefined, undefined, options,
     );
   }
 
-  async deleteAvailabilityRules(id: string, options?: RequestOptions): Promise<void> {
-    await this.client.request<void>(
+  deleteAvailabilityRules(id: string, options?: RequestOptions): APIPromise<void> {
+    return this.client.request<void>(
       'DELETE', `/v1/calendars/${id}/availability-rules`, undefined, undefined, options,
-    );
+    )._thenUnwrap(() => undefined);
   }
 }
