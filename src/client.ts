@@ -187,13 +187,20 @@ export class CoreClient {
           return { data, rawResponse };
         }
 
-        // Retryable?
-        if (RETRYABLE_STATUS_CODES.has(response.status) && attempt < this.maxRetries) {
-          lastError = await this.buildError(response, requestId);
+        const error = await this.buildError(response, requestId);
+        // Retryable? A monthly plan limit (429 `quota_exceeded`) never is: its
+        // Retry-After is the seconds left in the month, and asking again
+        // cannot succeed until the limit resets or the plan changes (#1936).
+        if (
+          RETRYABLE_STATUS_CODES.has(response.status) &&
+          attempt < this.maxRetries &&
+          !(error instanceof QuotaExceededError)
+        ) {
+          lastError = error;
           continue;
         }
 
-        throw await this.buildError(response, requestId);
+        throw error;
       } catch (err) {
         clearTimeout(timeoutId);
         options?.signal?.removeEventListener('abort', abortFromCaller);

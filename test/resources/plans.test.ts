@@ -11,8 +11,8 @@ describe('PlansClient', () => {
         tagline: 'For prototyping and small agents',
         price: 0,
         currency: 'usd',
-        limits: { agents: 5, calendars: 10, events: 5000, api_calls: 50000, webhook_deliveries: 10000, availability_queries: 10000, ical_subscriptions: 3, proposals: 500, webhook_endpoints: 3, scoped_keys: 0 },
-        display_features: ['5 agents'],
+        limits: { agents: 1, calendars: 1, events: 100, api_calls: 1000, webhook_deliveries: 1000, availability_queries: 100, ical_subscriptions: 0, proposals: 0, webhook_endpoints: 1, scoped_keys: 0 },
+        display_features: ['1 agent'],
         recommended: false,
       },
       {
@@ -53,7 +53,7 @@ describe('PlansClient', () => {
     expect(result.plans[1].price).toBe(2900);
     expect(result.plans[2].custom_pricing).toBe(true);
     // Guards the endpoint/key caps that were previously absent from PlanLimits.
-    expect(result.plans[0].limits?.webhook_endpoints).toBe(3);
+    expect(result.plans[0].limits?.webhook_endpoints).toBe(1);
     expect(result.plans[0].limits?.scoped_keys).toBe(0);
   });
 

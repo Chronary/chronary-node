@@ -2,8 +2,9 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
-## Unreleased
+## 0.9.0 — Unreleased
 
+- A 429 `quota_exceeded` (a monthly plan limit) is no longer retried: the request rejects with `QuotaExceededError` at once instead of sleeping on `Retry-After` and asking again. A rate-limit 429 still retries, waiting at most 60 seconds (#1936).
 - Add the `developer` plan: `PlanId` includes it, `Plan.annual_price`, `BillingSummary.pending_plan` / `pending_plan_interval` / `pending_plan_at`, `BillingUpgradeOption.plan` (`developer` | `pro`) and `via`, `UpgradeRequest.plan`. Errors expose `upgradePlan` (the plan `upgradeUrl` leads to). Additive; `BillingSummary.plan` stays a plain string (#1911).
 
 ## 0.8.1 — 2026-11-09

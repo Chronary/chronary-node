@@ -21,7 +21,7 @@ const REQUEST = {
 };
 
 const SUMMARY = {
-  plan: 'free-agent',
+  plan: 'free',
   plan_source: null,
   plan_expires_at: null,
   status: null,
@@ -58,7 +58,7 @@ describe('BillingClient', () => {
     const client = new Chronary(clientConfig(fetch));
 
     const result = await client.billing.get();
-    expect(result.plan).toBe('free-agent');
+    expect(result.plan).toBe('free');
     expect(result.upgrade_options[0].amount).toBe(2900);
     expect(result.pending_upgrade_request?.id).toBe('upr_abc123');
     const [url, init] = fetch.mock.calls[0];
