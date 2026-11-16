@@ -16,6 +16,7 @@ const EVENT = {
   metadata: {},
   recurrenceRule: null,
   recurrenceExdates: [],
+  timezone: null,
   deletedAt: null,
   createdAt: '2026-04-01T00:00:00Z',
   updatedAt: '2026-04-01T00:00:00Z',
@@ -185,6 +186,46 @@ describe('EventsClient', () => {
     expect('recurrence_rule' in body).toBe(true);
   });
 
+  it('create passes timezone in body (#2276)', async () => {
+    const fetch = mockFetch([{ status: 201, body: { ...EVENT, timezone: 'America/Los_Angeles' } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.events.create('cal_abc123', {
+      title: 'Stand-up',
+      start_time: '2026-04-15T16:00:00Z',
+      end_time: '2026-04-15T16:30:00Z',
+      recurrence_rule: 'FREQ=WEEKLY;BYDAY=WE',
+      timezone: 'America/Los_Angeles',
+    });
+    expect(result.timezone).toBe('America/Los_Angeles');
+    const body = JSON.parse(fetch.mock.calls[0][1]?.body as string);
+    expect(body.timezone).toBe('America/Los_Angeles');
+  });
+
+  it('update sends the migration PATCH (timezone + rule) (#2276)', async () => {
+    const fetch = mockFetch([{ status: 200, body: { ...EVENT, timezone: 'America/Los_Angeles', recurrenceRule: 'FREQ=WEEKLY;BYDAY=TU' } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.events.update('cal_abc123', 'evt_abc123', {
+      timezone: 'America/Los_Angeles',
+      recurrence_rule: 'FREQ=WEEKLY;BYDAY=TU',
+    });
+    expect(result.timezone).toBe('America/Los_Angeles');
+    const body = JSON.parse(fetch.mock.calls[0][1]?.body as string);
+    expect(body).toEqual({ timezone: 'America/Los_Angeles', recurrence_rule: 'FREQ=WEEKLY;BYDAY=TU' });
+  });
+
+  it('update sends null timezone and surfaces droppedExdates (#2277)', async () => {
+    const fetch = mockFetch([{ status: 200, body: { ...EVENT, droppedExdates: ['2026-04-21T16:00:00.000Z'] } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.events.updateById('evt_abc123', { timezone: null });
+    expect(result.timezone).toBeNull();
+    expect(result.droppedExdates).toEqual(['2026-04-21T16:00:00.000Z']);
+    const body = JSON.parse(fetch.mock.calls[0][1]?.body as string);
+    expect(body).toEqual({ timezone: null });
+  });
+
   it('list passes expand as a string query param', async () => {
     const fetch = mockFetch([
       { status: 200, body: { data: [], total: 0, limit: 50, offset: 0 } },
@@ -226,6 +267,36 @@ describe('EventsClient', () => {
     }
     expect(items[0].recurringEventId).toBe('evt_abc123');
     expect(items[0].originalStartTime).toBe('2026-04-22T09:00:00Z');
+  });
+
+  it('expanded instances carry startLocal, utcOffset and dstAdjusted (#2276)', async () => {
+    const instance = {
+      ...EVENT,
+      id: 'evt_abc123_inst',
+      timezone: 'America/New_York',
+      recurringEventId: 'evt_abc123',
+      originalStartTime: '2026-03-08T07:30:00Z',
+      startLocal: '2026-03-08T03:30:00',
+      utcOffset: '-04:00',
+      dstAdjusted: 'gap',
+    };
+    const fetch = mockFetch([
+      { status: 200, body: { data: [instance], total: 1, limit: 50, offset: 0 } },
+    ]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const items = [];
+    for await (const e of client.events.list({
+      calendarId: 'cal_1',
+      expand: true,
+      start_after: '2026-03-01T00:00:00Z',
+      start_before: '2026-04-01T00:00:00Z',
+    })) {
+      items.push(e);
+    }
+    expect(items[0].startLocal).toBe('2026-03-08T03:30:00');
+    expect(items[0].utcOffset).toBe('-04:00');
+    expect(items[0].dstAdjusted).toBe('gap');
   });
 
   it('delete with occurrence_start returns the updated series master', async () => {

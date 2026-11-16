@@ -103,6 +103,7 @@ export interface ListAgentsParams {
   /** Add `calendar_count` and `scoped_key_count` to each agent. */
   include_counts?: boolean;
   limit?: number;
+  /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
 }
 
@@ -150,6 +151,7 @@ export interface ListCalendarsParams {
   /** Case-insensitive substring of the calendar name, or an exact calendar id. Org-wide list only (not with `agentId`). */
   q?: string;
   limit?: number;
+  /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
 }
 
@@ -205,6 +207,7 @@ export interface UpdateBookingPageParams {
 
 export interface ListBookingPagesParams {
   limit?: number;
+  /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
   /** Only pages bound to this calendar. */
   calendar_id?: string;
@@ -302,10 +305,25 @@ export interface CalendarEvent {
   recurrenceRule: string | null;
   /** ISO 8601 starts of individually cancelled occurrences (EXDATE). */
   recurrenceExdates: string[];
+  /** IANA time zone the recurring series repeats in (e.g. "America/Los_Angeles"). null = UTC. */
+  timezone: string | null;
   /** Present only on expanded instances (`expand: true` lists): id of the recurring series master this instance belongs to. */
   recurringEventId?: string;
   /** Present only on expanded instances: the occurrence start this instance was generated for. */
   originalStartTime?: string;
+  /** Present only on expanded instances: local start in the series' time zone (`YYYY-MM-DDTHH:mm:ss`, no offset). */
+  startLocal?: string;
+  /** Present only on expanded instances: UTC offset of `startLocal` (e.g. "-08:00"). */
+  utcOffset?: string;
+  /** Present only on expanded instances: `"gap"` when a DST gap moved the local start forward, else null. */
+  dstAdjusted?: 'gap' | null;
+  /**
+   * Present only on update responses that moved a recurring series (changed
+   * `start_time`, `recurrence_rule` or `timezone`): cancelled occurrences
+   * (exdates) with no occurrence left on the same local date, so they were
+   * dropped. Ask the user and re-cancel with `occurrence_start` if needed.
+   */
+  droppedExdates?: string[];
   holdExpiresAt: string | null;
   /** Hold conflict priority (0-100). Never null: 0 unless set on a hold. */
   holdPriority: number;
@@ -337,6 +355,13 @@ export interface CreateEventParams {
    * or ends more than 90 days out on the free plan (Pro allows unbounded).
    */
   recurrence_rule?: string;
+  /**
+   * IANA time zone the recurring series repeats in, e.g. "America/Los_Angeles".
+   * The pattern repeats on local wall time (a weekly 16:00 stays 16:00 across
+   * daylight-saving changes); BYDAY and a date-only UNTIL are read in this
+   * zone. Omit for UTC. All-day events ignore it.
+   */
+  timezone?: string;
 }
 
 export interface UpdateEventParams {
@@ -360,6 +385,15 @@ export interface UpdateEventParams {
    * unbounded).
    */
   recurrence_rule?: string | null;
+  /**
+   * Set or change the IANA time zone the series repeats in, or null for UTC.
+   * Validated together with `recurrence_rule` and `start_time` on the merged
+   * event, so a UTC series can move to local time in one call. Changing
+   * `start_time`, `recurrence_rule` or `timezone` keeps each cancelled
+   * occurrence on its local date; any with no match come back in
+   * `droppedExdates`.
+   */
+  timezone?: string | null;
 }
 
 export interface ListEventsParams {
@@ -370,6 +404,7 @@ export interface ListEventsParams {
   status?: EventStatus;
   source?: 'internal' | 'external_ical';
   limit?: number;
+  /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
   /**
    * Expand recurring series into individual occurrence instances within the
@@ -400,6 +435,7 @@ export interface ListOrgEventsParams {
   expand?: boolean;
   /** Page size, at most 100. */
   limit?: number;
+  /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
 }
 
@@ -434,6 +470,7 @@ export interface BusyBlock {
 
 export interface AvailabilityParams {
   start: string;
+  /** At most the plan's max date range after `start` (30 days on Free); longer is a `ValidationError`. */
   end: string;
   /** Requested slot length. Preferred over `slot_duration`. */
   duration?: SlotDuration;
@@ -452,6 +489,7 @@ export interface CrossAgentAvailabilityParams {
   duration?: SlotDuration;
   /** @deprecated Use `duration` instead. */
   slot_duration?: SlotDuration;
+  /** Extra calendars whose busy time also blocks slots, at most 50. */
   calendars?: string[];
   include_busy?: boolean;
   /** Return slots from usable stale human-calendar cache. Defaults false (fail closed). */
@@ -626,6 +664,7 @@ export interface UpdateWebhookParams {
 
 export interface ListWebhooksParams {
   limit?: number;
+  /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
 }
 
@@ -779,6 +818,7 @@ export interface ListICalSubscriptionsParams {
   agentId?: string;
   status?: 'active' | 'error' | 'paused';
   limit?: number;
+  /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
 }
 
@@ -855,6 +895,7 @@ export interface ListProposalsParams {
   status?: ProposalStatus;
   organizer_agent_id?: string;
   limit?: number;
+  /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
 }
 

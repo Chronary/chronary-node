@@ -2,7 +2,12 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
-## 0.10.0 — Unreleased
+## 0.11.0 — 2026-11-16
+
+- **Time-zone-aware recurrence (#2276).** `events.create()` takes `timezone` (IANA, e.g. `"America/Los_Angeles"`) and `events.update()` / `updateById()` take `timezone` (or `null` for UTC): a recurring series then repeats on local wall time across daylight-saving changes. Events gain `timezone`; expanded instances gain `startLocal`, `utcOffset` and `dstAdjusted` (`"gap"` when a DST gap moved the start forward).
+- **Series edits keep cancelled occurrences (#2277).** An update that changes `start_time`, `recurrence_rule` or `timezone` on a recurring series now keeps each cancelled occurrence on its local date. Any with no match are dropped and listed in the response's `droppedExdates`.
+
+## 0.10.0
 
 - `client.usage.get()` types the two fields the API already returned: `webhook_endpoints` (`{ used, limit }`, registered webhook endpoints vs. the plan cap) and `scoped_keys` (`{ count, limit }`, active agent-scoped keys). Add the `ScopedKeysUsage` type and export `HoldsUsage` and `CrossCalendarQueriesUsage`. A new test fails when the API's `Usage` response gains a field the SDK type lacks (#1995).
 - Every single-request resource method now returns an `APIPromise<T>`, so `.withResponse()` works on them as documented: `const { data, response } = await client.agents.get('agt_1').withResponse()` gives the status, headers and parsed `response.quota`. `APIPromise` is now a real `Promise` subclass, so `await`, `Promise.all` and `Promise<T>` annotations work as before. The auto-paginating `list()` helpers still return a `PageIterator` (#2002).
