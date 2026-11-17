@@ -1281,6 +1281,11 @@ export interface WaitlistJoinParams {
   tos_version?: string;
   /** Optional "what are you building?" note, up to 200 characters. */
   intent?: string;
+  /**
+   * Human-verification token from the console waitlist form's widget (#2103).
+   * Only a browser can obtain one; SDK callers leave it unset.
+   */
+  turnstile_token?: string;
 }
 
 /**

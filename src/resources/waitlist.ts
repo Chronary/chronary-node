@@ -26,6 +26,10 @@ export class WaitlistClient {
    *   `tos_version` doesn't match the currently-published version.
    * @throws ChronaryError (429 `rate_limit_error`) on the per-IP / per-email
    *   waitlist limiter.
+   * @throws ChronaryError (400 `challenge_failed`) while the human check on the
+   *   console waitlist form is switched on (#2103). It applies only to that human
+   *   form, and an SDK client cannot solve it: an agent signs up with
+   *   `agentAuth.signUp` (`POST /v1/agent/sign-up`), which is never challenged.
    */
   join(
     params: WaitlistJoinParams,

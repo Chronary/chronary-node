@@ -2,6 +2,10 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
+## 0.11.1 — 2026-11-16
+
+- README: the plans table gains the Developer plan. Developer now has every paid-plan feature, scheduling proposals (1,000 a month) and temporal holds included (#2331). No code change.
+
 ## 0.11.0 — 2026-11-16
 
 - **Time-zone-aware recurrence (#2276).** `events.create()` takes `timezone` (IANA, e.g. `"America/Los_Angeles"`) and `events.update()` / `updateById()` take `timezone` (or `null` for UTC): a recurring series then repeats on local wall time across daylight-saving changes. Events gain `timezone`; expanded instances gain `startLocal`, `utcOffset` and `dstAdjusted` (`"gap"` when a DST gap moved the start forward).

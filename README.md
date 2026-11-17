@@ -61,18 +61,22 @@ If `apiKey` is omitted, the SDK will also check `process.env.CHRONARY_API_KEY`.
 
 Chronary enforces a per-key rate limit and per-org monthly quotas that vary by plan:
 
-| | Free | Pro |
-|---|---|---|
-| Rate limit | 10 req/s | 50 req/s |
-| Webhook delivery retries | 4 | 8 |
-| Agents | 1 | 50 |
-| Calendars | 1 | 250 |
-| Events / mo | 100 | 125,000 |
-| API calls / mo | 1,000 | 1,000,000 |
-| Webhook deliveries / mo | 1,000 | 250,000 |
-| Pro-only features | — | Scheduling proposals, temporal holds, cross-calendar availability, per-agent API keys (`chr_ak_*`) |
+| | Free | Developer | Pro |
+|---|---|---|---|
+| Rate limit | 10 req/s | 25 req/s | 50 req/s |
+| Webhook delivery retries | 4 | 6 | 8 |
+| Agents | 1 | 10 | 50 |
+| Calendars | 1 | 50 | 250 |
+| Events / mo | 100 | 15,000 | 125,000 |
+| API calls / mo | 1,000 | 200,000 | 1,000,000 |
+| Webhook deliveries / mo | 1,000 | 25,000 | 250,000 |
+| Scheduling proposals / mo | — | 1,000 | unlimited |
+| Per-agent API keys (`chr_ak_*`) | — | 10 | 50 |
+| Paid-plan features | — | all | all |
 
-Pro-only feature calls return `403` with an upgrade hint on Free. See the full matrix and rate-limit handling guidance at <https://docs.chronary.ai/resources/rate-limits/>.
+Paid-plan features are scheduling proposals, temporal holds, cross-agent availability, per-agent API keys, and webhook delivery replay and secret rotation. Developer and Pro have the same features and differ only in their limits.
+
+Paid-plan feature calls return `403` with an upgrade hint on Free. See the full matrix and rate-limit handling guidance at <https://docs.chronary.ai/resources/rate-limits/>.
 
 ## Response headers and quota
 
