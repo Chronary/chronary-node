@@ -350,9 +350,10 @@ export interface CreateEventParams {
    * RFC 5545 RRULE subset (no "RRULE:" prefix), e.g. "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12" —
    * makes the event a recurring series master. Not allowed with status='hold'.
    * Fails with 400 on an invalid rule; 429 when the plan's active
-   * recurring-series cap is reached (free: 1, Pro: 250 — see
-   * `usage.recurring_events`); 403 plan_required when the series is unbounded
-   * or ends more than 90 days out on the free plan (Pro allows unbounded).
+   * recurring-series cap is reached (Free 1, Developer 50, Pro 250 — see
+   * `usage.recurring_events`); 403 plan_required when the series has no end
+   * (no COUNT/UNTIL) or ends more than 90 days out on the free plan
+   * (Developer and Pro allow series with no end date).
    */
   recurrence_rule?: string;
   /**
@@ -380,9 +381,9 @@ export interface UpdateEventParams {
    * "RRULE:" prefix). null clears the rule, turning the series back into a
    * one-off event. Fails with 400 on an invalid rule; 429 when converting a
    * one-off to recurring and the plan's active recurring-series cap is
-   * reached (free: 1, Pro: 250); 403 plan_required when the series is
-   * unbounded or ends more than 90 days out on the free plan (Pro allows
-   * unbounded).
+   * reached (Free 1, Developer 50, Pro 250); 403 plan_required when the
+   * series has no end (no COUNT/UNTIL) or ends more than 90 days out on the
+   * free plan (Developer and Pro allow series with no end date).
    */
   recurrence_rule?: string | null;
   /**
@@ -1012,10 +1013,12 @@ export interface Usage {
   availability_queries: UsageMetric;
   ical_subscriptions: UsageMetric;
   proposals: UsageMetric;
-  /** Active recurring series masters vs. the plan cap (free: 1, Pro: 250; null = unlimited). */
+  /** Active recurring series masters vs. the plan cap (Free 1, Developer 50, Pro 250; null = unlimited). */
   recurring_events: UsageMetric;
-  /** Active booking pages vs. the plan cap (free: 1, Pro: 25; null = unlimited). */
+  /** Active booking pages vs. the plan cap (Free 1, Developer 5, Pro 25; null = unlimited). */
   booking_pages: UsageMetric;
+  /** Live Google / Microsoft calendar connections vs. the plan cap (Free 1, Developer 5, Pro 25; null = unlimited). */
+  calendar_connections: UsageMetric;
   /** Active agent-scoped keys vs. the plan cap. */
   scoped_keys: ScopedKeysUsage;
   holds: HoldsUsage;

@@ -20,6 +20,7 @@ const USAGE: Usage = {
   proposals: { used: 0, limit: 0 },
   recurring_events: { used: 1, limit: 1 },
   booking_pages: { used: 0, limit: 1 },
+  calendar_connections: { used: 0, limit: 1 },
   scoped_keys: { count: 0, limit: 0 },
   holds: { created: 2, confirmed: 1, expired: 1, active: 0 },
   cross_calendar_queries: { used: 0 },
@@ -39,6 +40,7 @@ describe('UsageClient', () => {
     expect(result.recurring_events.used).toBe(1);
     expect(result.recurring_events.limit).toBe(1);
     expect(result.webhook_endpoints).toEqual({ used: 1, limit: 1 });
+    expect(result.calendar_connections).toEqual({ used: 0, limit: 1 });
     expect(result.scoped_keys).toEqual({ count: 0, limit: 0 });
     expect(fetch.mock.calls[0][0]).toContain('/v1/usage');
   });
