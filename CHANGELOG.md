@@ -2,6 +2,10 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
+## 0.13.0 — 2026-11-17
+
+- `client.agentAuth.signUpAnonymous({ agent_name, tos_version, source? })` calls `POST /v1/agent/sign-up/anonymous`: a claimable organization with no email. Returns `api_key` (works at once, Sandbox limits), a one-time `claim_url` for the person who should own the calendar, and `expires_at` (72 hours; unclaimed, the org and its data are deleted). New types `AgentSignUpAnonymousParams` and `AgentSignUpAnonymousResponse` (#2335).
+
 ## 0.12.0 — 2026-11-17
 
 - `client.usage.get()` types the new `calendar_connections` field (`{ used, limit }`): live Google / Microsoft calendar connections vs. the plan cap (#2397).

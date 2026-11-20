@@ -1255,6 +1255,36 @@ export type AgentSignUpResponse =
   | AgentSignUpExistingOrgResponse
   | AgentSignUpWaitlistedResponse;
 
+/** Body of `POST /v1/agent/sign-up/anonymous` (claimable org, no email). */
+export interface AgentSignUpAnonymousParams {
+  /** Display name of the signing-up agent (1–100 chars). */
+  agent_name: string;
+  /** Exact ToS version string the caller has accepted. */
+  tos_version: string;
+  /** Who is signing up: `playground` (the chronary.ai playground) or `agent` (the default). Reporting only. */
+  source?: 'playground' | 'agent';
+}
+
+/**
+ * HTTP 201 from `POST /v1/agent/sign-up/anonymous`. The `api_key` works at
+ * once at Sandbox limits until `expires_at`. Give `claim_url` to the person
+ * who should own the calendar: opening it while signed in to the console
+ * moves everything into their account (and this key stops working). Both are
+ * shown once.
+ */
+export interface AgentSignUpAnonymousResponse {
+  org_id: string;
+  agent_id: string;
+  /** Organization key. */
+  api_key: string;
+  /** One-time claim link; the token is in the URL fragment. */
+  claim_url: string;
+  /** ISO 8601. Unclaimed, the key stops and the org is deleted after this. */
+  expires_at: string;
+  /** Always the Sandbox plan, `free-agent-unverified`. */
+  plan: string;
+}
+
 export interface AgentVerifyParams {
   /** Six-digit numeric code from the verification email. */
   otp: string;

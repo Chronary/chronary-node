@@ -94,11 +94,66 @@ jobs:
       - name: Pack tarball
         run: pnpm pack
 
+      # SBOM (EU CRA Annex I Part II (1), #1634): CycloneDX, attached to the
+      # GitHub Release. Fail-closed: these run before anything is published,
+      # with no continue-on-error, so no release ships without a valid SBOM.
+      # Tool pins and the validator live in scripts/public-release/sbom.mjs.
+      - name: Generate SBOM
+        run: |
+          set -euo pipefail
+          # Resolve the runtime dependency tree a user gets from the registry,
+          # in a clean directory (no workspace node_modules, no install scripts).
+          work="$RUNNER_TEMP/sbom-src"
+          rm -rf "$work" && mkdir -p "$work" sbom
+          cp package.json "$work/"
+          (cd "$work" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund)
+          SBOM_FILE="sbom/chronary-sdk-${GITHUB_REF_NAME#v}.cdx.json"
+          (cd "$work" && npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --package-lock-only --omit dev \
+            --spec-version 1.6 --output-reproducible --validate \
+            --output-format JSON --output-file "$work/sbom.cdx.json")
+          cp "$work/sbom.cdx.json" "$SBOM_FILE"
+          echo "SBOM_FILE=$SBOM_FILE" >> "$GITHUB_ENV"
+
+      - name: Validate SBOM
+        env:
+          EXPECTED_NAME: '@chronary/sdk'
+        run: |
+          node - "$SBOM_FILE" "$EXPECTED_NAME" "${GITHUB_REF_NAME#v}" <<'JS'
+          const fs = require('fs');
+          const [file, expectedName, expectedVersion] = process.argv.slice(2);
+          const fail = (msg) => {
+            console.error('::error::SBOM ' + file + ': ' + msg);
+            process.exit(1);
+          };
+          let bom;
+          try {
+            bom = JSON.parse(fs.readFileSync(file, 'utf8'));
+          } catch (e) {
+            fail('not readable JSON (' + e.message + ')');
+          }
+          if (bom.bomFormat !== 'CycloneDX') fail('bomFormat is ' + JSON.stringify(bom.bomFormat) + ', expected CycloneDX');
+          if (!/^1\.[4-9]$/.test(String(bom.specVersion))) fail('unsupported specVersion ' + JSON.stringify(bom.specVersion));
+          const main = bom.metadata && bom.metadata.component;
+          if (!main) fail('metadata.component is missing');
+          const name = [main.group, main.name].filter(Boolean).join('/');
+          if (name !== expectedName) fail('main component is ' + JSON.stringify(name) + ', expected ' + JSON.stringify(expectedName));
+          const bare = (v) => String(v).replace(/^v/, '');
+          if (!expectedVersion) fail('no expected version given');
+          if (main.version === undefined || main.version === '') main.version = bare(expectedVersion);
+          else if (bare(main.version) !== bare(expectedVersion)) fail('version is ' + main.version + ', expected ' + expectedVersion);
+          if (bom.components !== undefined && !Array.isArray(bom.components)) fail('components is not an array');
+          fs.writeFileSync(file, JSON.stringify(bom, null, 2) + '\n');
+          console.log('SBOM ok: ' + name + '@' + main.version + ', ' + (bom.components || []).length + ' components');
+          JS
+
       - name: Attest build provenance for npm tarball
         if: github.event.repository.visibility == 'public'
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
-          subject-path: '*.tgz'
+          # The SBOM too, so a replaced Release asset is detectable.
+          subject-path: |
+            *.tgz
+            sbom/*.cdx.json
 
       - name: Publish to npm
         if: steps.manifest.outputs.publish_registry == 'true'
@@ -108,6 +163,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" *.tgz \
+          gh release create "${GITHUB_REF_NAME}" *.tgz "$SBOM_FILE" \
             --title "@chronary/sdk ${GITHUB_REF_NAME}" \
             --notes-file RELEASE_NOTES.txt

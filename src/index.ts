@@ -205,6 +205,8 @@ export type {
   AgentSignUpResponse,
   AgentSignUpNewOrgResponse,
   AgentSignUpExistingOrgResponse,
+  AgentSignUpAnonymousParams,
+  AgentSignUpAnonymousResponse,
   AgentVerifyParams,
   AgentVerifyResponse,
   WaitlistJoinParams,

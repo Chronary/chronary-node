@@ -1,6 +1,8 @@
 import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
 import type {
+  AgentSignUpAnonymousParams,
+  AgentSignUpAnonymousResponse,
   AgentSignUpParams,
   AgentSignUpResponse,
   AgentSignUpNewOrgResponse,
@@ -38,6 +40,35 @@ export class AgentAuthClient {
     return this.client.request<AgentSignUpResponse>(
       'POST',
       '/v1/agent/sign-up',
+      params,
+      undefined,
+      options,
+    );
+  }
+
+  /**
+   * Sign up without an email: a claimable organization (`POST
+   * /v1/agent/sign-up/anonymous`). No authentication required.
+   *
+   * The returned `api_key` works at once at Sandbox limits. The org sends and
+   * receives no email and cannot create webhook endpoints or call `verify()`.
+   * Hand `claim_url` to the person who should own the calendar before
+   * `expires_at` (72 hours); unclaimed, the key stops working and the org and
+   * its data are deleted.
+   *
+   * @throws ChronaryError (409 `tos_version_stale`) if `tos_version` is not
+   *   the current version; (429 `rate_limit_error`) over the per-network
+   *   budget; (503 `anonymous_signup_disabled`, `signups_paused`,
+   *   `anonymous_signup_capacity` or `temporarily_disabled`) when this
+   *   sign-up is unavailable.
+   */
+  signUpAnonymous(
+    params: AgentSignUpAnonymousParams,
+    options?: RequestOptions,
+  ): APIPromise<AgentSignUpAnonymousResponse> {
+    return this.client.request<AgentSignUpAnonymousResponse>(
+      'POST',
+      '/v1/agent/sign-up/anonymous',
       params,
       undefined,
       options,

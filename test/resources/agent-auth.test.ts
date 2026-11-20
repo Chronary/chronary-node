@@ -115,6 +115,49 @@ describe('AgentAuthClient', () => {
     });
   });
 
+  describe('signUpAnonymous', () => {
+    const ANON_RESPONSE = {
+      org_id: '11111111-2222-3333-4444-555555555555',
+      agent_id: 'agt_anon',
+      api_key: 'chr_sk_anon',
+      claim_url: 'https://console.chronary.ai/claim/anonymous#token=tok',
+      expires_at: '2026-11-20T12:00:00.000Z',
+      plan: 'free-agent-unverified',
+    };
+
+    it('posts to /v1/agent/sign-up/anonymous without auth and returns the key and claim link', async () => {
+      const fetch = mockFetch([{ status: 201, body: ANON_RESPONSE }]);
+      const client = new Chronary({ baseUrl: 'https://api.test.chronary.ai', fetch, maxRetries: 0 });
+
+      const result = await client.agentAuth.signUpAnonymous({ agent_name: 'Playground', tos_version: '2026-04-17' });
+
+      expect(result).toEqual(ANON_RESPONSE);
+      const [url, init] = fetch.mock.calls[0];
+      expect(url).toBe('https://api.test.chronary.ai/v1/agent/sign-up/anonymous');
+      expect(init?.method).toBe('POST');
+      expect(JSON.parse(init?.body as string)).toEqual({ agent_name: 'Playground', tos_version: '2026-04-17' });
+      expect((init?.headers as Record<string, string>).Authorization).toBeUndefined();
+    });
+
+    it('sends source when given', async () => {
+      const fetch = mockFetch([{ status: 201, body: ANON_RESPONSE }]);
+      const client = new Chronary(clientConfig(fetch));
+      await client.agentAuth.signUpAnonymous({ agent_name: 'P', tos_version: 'v', source: 'playground' });
+      expect(JSON.parse(fetch.mock.calls[0][1]?.body as string)).toMatchObject({ source: 'playground' });
+    });
+
+    it('propagates 503 anonymous_signup_disabled as an error', async () => {
+      const fetch = mockFetch([
+        {
+          status: 503,
+          body: { error: { type: 'anonymous_signup_disabled', message: 'Sign-up without an email is not available.', request_id: 'req_1' } },
+        },
+      ]);
+      const client = new Chronary(clientConfig(fetch));
+      await expect(client.agentAuth.signUpAnonymous({ agent_name: 'P', tos_version: 'v' })).rejects.toBeInstanceOf(ChronaryError);
+    });
+  });
+
   describe('verify', () => {
     it('posts to /v1/agent/verify with Authorization header', async () => {
       const fetch = mockFetch([
