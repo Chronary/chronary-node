@@ -1099,7 +1099,7 @@ export interface UsageHistory {
 
 // ── Audit log (#509) ───────────────────────────────────────────
 
-export type AuditActorType = 'session' | 'org_key' | 'agent_key' | 'system';
+export type AuditActorType = 'session' | 'org_key' | 'agent_key' | 'oauth_app' | 'system';
 
 export type AuditStatusClass = '2xx' | '3xx' | '4xx' | '5xx';
 
@@ -1122,13 +1122,14 @@ export interface AuditLogEntry {
   actor_key_prefix: string | null;
   /**
    * Who acted: a console `session`, the Organization key (`org_key`), an
-   * Agent key (`agent_key`), or Chronary itself (`system`). Null on older
-   * entries that could not be attributed.
+   * Agent key (`agent_key`), an app connected to the hosted MCP server by
+   * signing in, such as Claude (`oauth_app`), or Chronary itself (`system`).
+   * Null on older entries that could not be attributed.
    */
   actor_type: AuditActorType | null;
-  /** API key id for a key, the organization id for a console session, null for the system. */
+  /** API key id for a key, the organization id for a console session, the connection id for a connected app, null for the system. */
   actor_id: string | null;
-  /** Display name: key label (or key prefix), session email, or "Chronary". */
+  /** Display name: key label (or key prefix), session email, the connected app's name, or "Chronary". */
   actor_label: string | null;
   /** Scoped-key agent ID when the actor used a chr_ak_* key. */
   agent_id: string | null;

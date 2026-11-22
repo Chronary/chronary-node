@@ -2,6 +2,10 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
+## 0.13.3 — unreleased
+
+- `AuditActorType` gains `oauth_app`: an app the organization connected to the hosted MCP server by signing in, such as Claude. Its audit entries have `actor_id` set to the connection id and `actor_label` to the app's name, and `auditLog.list({ actor_type: 'oauth_app' })` filters by it (#2254).
+
 ## 0.13.2 — unreleased
 
 - **Path parameters are encoded (#2519).** Every ID (and booking slug) a method puts into the URL path is now percent-encoded as one segment, so a value such as `../agents/agt_1`, `whk_1#` or `evt_1?expand=all` can no longer turn `events.deleteById()` or `events.getById()` into a call on another resource or add a query string. `""`, `"."` and `".."` are refused before any request is sent: the returned promise rejects with a `ValidationError` (status `0`). Real Chronary IDs are unaffected. New export `encodePathSegment()` for code that builds its own paths for `CoreClient.request()`. `request()` also accepts the internal `ApiPath` the resource methods use, exported as a type only; its `apiPath` builder stays internal and is not part of the public API.
