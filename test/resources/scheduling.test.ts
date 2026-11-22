@@ -90,6 +90,34 @@ describe('SchedulingClient', () => {
     expect(fetch.mock.calls[0][0]).toContain('/v1/scheduling/proposals/spr_abc123/respond');
   });
 
+  it('respond returns auto_resolve_error when the auto-resolve fails (#2540)', async () => {
+    const fetch = mockFetch([
+      {
+        status: 200,
+        body: {
+          id: 'rsp_1',
+          agent_id: 'agt_a',
+          response: 'accept',
+          selected_slot_id: 'slt_1',
+          counter_slots: null,
+          message: null,
+          created_at: '2026-04-16T13:00:00Z',
+          auto_resolved: null,
+          auto_resolve_error: { code: 'event_quota_exceeded', message: 'The response was saved, but ...' },
+        },
+      },
+    ]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const result = await client.scheduling.respond('spr_abc123', {
+      agent_id: 'agt_a',
+      response: 'accept',
+      selected_slot_id: 'slt_1',
+    });
+    expect(result.auto_resolved).toBeNull();
+    expect(result.auto_resolve_error?.code).toBe('event_quota_exceeded');
+  });
+
   it('resolve returns confirmed slot', async () => {
     const fetch = mockFetch([
       {

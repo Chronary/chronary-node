@@ -4,7 +4,7 @@ import { PageIterator } from '../pagination';
 import type {
   Proposal,
   ProposalSummary,
-  ProposalResponse,
+  RespondToProposalResult,
   CreateProposalParams,
   RespondToProposalParams,
   ListProposalsParams,
@@ -46,8 +46,8 @@ export class SchedulingClient {
     id: string,
     params: RespondToProposalParams,
     options?: RequestOptions,
-  ): APIPromise<ProposalResponse> {
-    return this.client.request<ProposalResponse>(
+  ): APIPromise<RespondToProposalResult> {
+    return this.client.request<RespondToProposalResult>(
       'POST', `/v1/scheduling/proposals/${id}/respond`, params, undefined, options,
     );
   }

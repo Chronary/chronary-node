@@ -2,6 +2,10 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
+## 0.13.1 — unreleased
+
+- `scheduling.respond()` returns `RespondToProposalResult`: the saved response plus `auto_resolved` (`confirmed` / `cancelled` / `null`) and `auto_resolve_error` (`null` or `{ code, message }`). When the last response's auto-resolve fails, the API now answers 200 with `auto_resolve_error` instead of an error status, because the response was saved; `message` says what to do next (usually `scheduling.resolve(id)`). Don't respond again. New types `RespondToProposalResult`, `AutoResolveError` and `AutoResolveErrorCode` (#2540).
+
 ## 0.13.0 — 2026-11-17
 
 - `client.agentAuth.signUpAnonymous({ agent_name, tos_version, source? })` calls `POST /v1/agent/sign-up/anonymous`: a claimable organization with no email. Returns `api_key` (works at once, Sandbox limits), a one-time `claim_url` for the person who should own the calendar, and `expires_at` (72 hours; unclaimed, the org and its data are deleted). New types `AgentSignUpAnonymousParams` and `AgentSignUpAnonymousResponse` (#2335).

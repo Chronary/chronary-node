@@ -852,6 +852,36 @@ export interface ProposalResponse {
   created_at: string;
 }
 
+/** Why a respond's auto-resolve failed. */
+export type AutoResolveErrorCode =
+  | 'event_quota_exceeded'
+  | 'calendar_not_found'
+  | 'agent_inactive'
+  | 'conflict'
+  | 'no_valid_slot'
+  | 'resolve_failed';
+
+export interface AutoResolveError {
+  code: AutoResolveErrorCode;
+  /** What happened and what to do next. */
+  message: string;
+}
+
+/**
+ * The result of `scheduling.respond()`: the saved response plus what the
+ * auto-resolve did when this response was the last one.
+ */
+export interface RespondToProposalResult extends ProposalResponse {
+  /** `confirmed` / `cancelled` when the proposal auto-resolved; otherwise `null`. */
+  auto_resolved: 'confirmed' | 'cancelled' | null;
+  /**
+   * Set when this response was the last one but the auto-resolve failed. The
+   * response is still saved; `message` says what to do next (usually:
+   * `scheduling.resolve(id)` once the cause is fixed). Do not respond again.
+   */
+  auto_resolve_error: AutoResolveError | null;
+}
+
 export interface ProposalSummary {
   id: string;
   title: string;
