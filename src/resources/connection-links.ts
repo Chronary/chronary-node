@@ -1,5 +1,6 @@
 import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
+import { apiPath } from '../path';
 import type { RequestOptions } from '../types';
 
 export interface CreateConnectionLinkParams {
@@ -34,7 +35,7 @@ export class ConnectionLinksClient {
   constructor(private readonly client: CoreClient) {}
 
   create(calendarId: string, params: CreateConnectionLinkParams, options?: RequestOptions): APIPromise<ConnectionLink> {
-    return this.client.request<ConnectionLink>('POST', `/v1/calendars/${calendarId}/connection-links`, params, undefined, options);
+    return this.client.request<ConnectionLink>('POST', apiPath`/v1/calendars/${calendarId}/connection-links`, params, undefined, options);
   }
 
   /** Setup links, newest first. An agent-scoped key sees only its own calendars' links. */
@@ -50,10 +51,10 @@ export class ConnectionLinksClient {
   }
 
   get(id: string, options?: RequestOptions): APIPromise<ConnectionLink> {
-    return this.client.request<ConnectionLink>('GET', `/v1/connection-links/${id}`, undefined, undefined, options);
+    return this.client.request<ConnectionLink>('GET', apiPath`/v1/connection-links/${id}`, undefined, undefined, options);
   }
 
   cancel(id: string, options?: RequestOptions): APIPromise<void> {
-    return this.client.request<void>('DELETE', `/v1/connection-links/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
+    return this.client.request<void>('DELETE', apiPath`/v1/connection-links/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
   }
 }

@@ -1,5 +1,6 @@
 import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
+import { apiPath } from '../path';
 import type {
   CreatedScopedApiKey,
   CreateScopedApiKeyParams,
@@ -32,6 +33,6 @@ export class KeysClient {
   }
 
   delete(id: string, options?: RequestOptions): APIPromise<void> {
-    return this.client.request<void>('DELETE', `/v1/keys/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
+    return this.client.request<void>('DELETE', apiPath`/v1/keys/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
   }
 }

@@ -76,6 +76,8 @@ export { CoreClient } from './client';
 export { APIPromise } from './api-promise';
 export type { QuotaSnapshot, RawResponse, WithResponse } from './api-promise';
 export { PageIterator } from './pagination';
+export { encodePathSegment } from './path';
+export type { ApiPath } from './path';
 export { verifySignature, constructEvent } from './webhook-verify';
 export { VERSION } from './version';
 export { isAgentSignUpNewOrg } from './resources/agent-auth';

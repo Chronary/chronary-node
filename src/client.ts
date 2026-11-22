@@ -11,6 +11,7 @@ import {
   ConnectionError,
 } from './error';
 import { APIPromise } from './api-promise';
+import type { ApiPath } from './path';
 import type { QuotaSnapshot, RawResponse } from './api-promise';
 import type { ChronaryConfig, LogLevel, RequestOptions, ApiErrorBody } from './types';
 
@@ -104,7 +105,7 @@ export class CoreClient {
 
   request<T>(
     method: string,
-    path: string,
+    path: string | ApiPath,
     body?: unknown,
     query?: Record<string, QueryValue>,
     options?: RequestOptions,
@@ -114,11 +115,14 @@ export class CoreClient {
 
   private async _request<T>(
     method: string,
-    path: string,
+    requestPath: string | ApiPath,
     body?: unknown,
     query?: Record<string, QueryValue>,
     options?: RequestOptions,
   ): Promise<{ data: T; rawResponse: RawResponse }> {
+    // Encoding happens here, inside the async body, so a refused ID (#2519)
+    // rejects the returned promise before any request is sent.
+    const path = typeof requestPath === 'string' ? requestPath : requestPath.resolve();
     const url = this.buildUrl(path, query);
     const headers: Record<string, string> = {
       'User-Agent': this.userAgent,

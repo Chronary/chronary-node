@@ -1,5 +1,6 @@
 import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
+import { apiPath } from '../path';
 import type {
   BillingSummary,
   CreateUpgradeRequestParams,
@@ -21,12 +22,12 @@ export class UpgradeRequestsClient {
 
   /** Poll an upgrade request (at most once a minute). */
   get(id: string, options?: RequestOptions): APIPromise<UpgradeRequest> {
-    return this.client.request<UpgradeRequest>('GET', `/v1/billing/upgrade-requests/${id}`, undefined, undefined, options);
+    return this.client.request<UpgradeRequest>('GET', apiPath`/v1/billing/upgrade-requests/${id}`, undefined, undefined, options);
   }
 
   /** Withdraw a pending upgrade request. */
   cancel(id: string, options?: RequestOptions): APIPromise<UpgradeRequest> {
-    return this.client.request<UpgradeRequest>('POST', `/v1/billing/upgrade-requests/${id}/cancel`, undefined, undefined, options);
+    return this.client.request<UpgradeRequest>('POST', apiPath`/v1/billing/upgrade-requests/${id}/cancel`, undefined, undefined, options);
   }
 }
 

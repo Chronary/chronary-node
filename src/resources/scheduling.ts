@@ -1,5 +1,6 @@
 import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
+import { apiPath } from '../path';
 import { PageIterator } from '../pagination';
 import type {
   Proposal,
@@ -38,7 +39,7 @@ export class SchedulingClient {
 
   get(id: string, options?: RequestOptions): APIPromise<Proposal> {
     return this.client.request<Proposal>(
-      'GET', `/v1/scheduling/proposals/${id}`, undefined, undefined, options,
+      'GET', apiPath`/v1/scheduling/proposals/${id}`, undefined, undefined, options,
     );
   }
 
@@ -48,19 +49,19 @@ export class SchedulingClient {
     options?: RequestOptions,
   ): APIPromise<RespondToProposalResult> {
     return this.client.request<RespondToProposalResult>(
-      'POST', `/v1/scheduling/proposals/${id}/respond`, params, undefined, options,
+      'POST', apiPath`/v1/scheduling/proposals/${id}/respond`, params, undefined, options,
     );
   }
 
   resolve(id: string, options?: RequestOptions): APIPromise<ResolveProposalResponse> {
     return this.client.request<ResolveProposalResponse>(
-      'POST', `/v1/scheduling/proposals/${id}/resolve`, undefined, undefined, options,
+      'POST', apiPath`/v1/scheduling/proposals/${id}/resolve`, undefined, undefined, options,
     );
   }
 
   cancel(id: string, options?: RequestOptions): APIPromise<CancelProposalResponse> {
     return this.client.request<CancelProposalResponse>(
-      'POST', `/v1/scheduling/proposals/${id}/cancel`, undefined, undefined, options,
+      'POST', apiPath`/v1/scheduling/proposals/${id}/cancel`, undefined, undefined, options,
     );
   }
 }

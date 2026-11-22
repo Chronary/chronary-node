@@ -1,5 +1,6 @@
 import type { APIPromise } from '../api-promise';
 import type { CoreClient, QueryValue } from '../client';
+import { apiPath } from '../path';
 import { PageIterator } from '../pagination';
 import type {
   Webhook,
@@ -26,7 +27,7 @@ export class WebhooksClient {
   }
 
   get(id: string, options?: RequestOptions): APIPromise<Webhook> {
-    return this.client.request<Webhook>('GET', `/v1/webhooks/${id}`, undefined, undefined, options);
+    return this.client.request<Webhook>('GET', apiPath`/v1/webhooks/${id}`, undefined, undefined, options);
   }
 
   list(params: ListWebhooksParams = {}): PageIterator<Webhook> {
@@ -44,11 +45,11 @@ export class WebhooksClient {
   }
 
   update(id: string, params: UpdateWebhookParams, options?: RequestOptions): APIPromise<Webhook> {
-    return this.client.request<Webhook>('PATCH', `/v1/webhooks/${id}`, params, undefined, options);
+    return this.client.request<Webhook>('PATCH', apiPath`/v1/webhooks/${id}`, params, undefined, options);
   }
 
   delete(id: string, options?: RequestOptions): APIPromise<void> {
-    return this.client.request<void>('DELETE', `/v1/webhooks/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
+    return this.client.request<void>('DELETE', apiPath`/v1/webhooks/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
   }
 
   listDeliveries(
@@ -63,7 +64,7 @@ export class WebhooksClient {
     }
     return this.client.request<WebhookDeliveryListResponse>(
       'GET',
-      `/v1/webhooks/${webhookId}/deliveries`,
+      apiPath`/v1/webhooks/${webhookId}/deliveries`,
       undefined,
       query,
       options,
@@ -78,7 +79,7 @@ export class WebhooksClient {
   ): APIPromise<WebhookDeliveryDetail> {
     return this.client.request<WebhookDeliveryDetail>(
       'GET',
-      `/v1/webhooks/${webhookId}/deliveries/${deliveryId}`,
+      apiPath`/v1/webhooks/${webhookId}/deliveries/${deliveryId}`,
       undefined,
       undefined,
       options,
@@ -98,7 +99,7 @@ export class WebhooksClient {
   ): APIPromise<WebhookTestSent> {
     return this.client.request<WebhookTestSent>(
       'POST',
-      `/v1/webhooks/${webhookId}/test`,
+      apiPath`/v1/webhooks/${webhookId}/test`,
       params,
       undefined,
       options,
@@ -121,7 +122,7 @@ export class WebhooksClient {
   ): APIPromise<WebhookReplaySent> {
     return this.client.request<WebhookReplaySent>(
       'POST',
-      `/v1/webhooks/${webhookId}/deliveries/${deliveryId}/replay`,
+      apiPath`/v1/webhooks/${webhookId}/deliveries/${deliveryId}/replay`,
       undefined,
       undefined,
       options,
@@ -142,7 +143,7 @@ export class WebhooksClient {
   ): APIPromise<RotatedWebhookSecret> {
     return this.client.request<RotatedWebhookSecret>(
       'POST',
-      `/v1/webhooks/${webhookId}/secret/rotate`,
+      apiPath`/v1/webhooks/${webhookId}/secret/rotate`,
       params,
       undefined,
       options,

@@ -1,5 +1,6 @@
 import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
+import { apiPath, type ApiPath } from '../path';
 import { PageIterator } from '../pagination';
 import type {
   CalendarEvent,
@@ -17,24 +18,24 @@ export class EventsClient {
 
   create(calendarId: string, params: CreateEventParams, options?: RequestOptions): APIPromise<CalendarEvent> {
     return this.client.request<CalendarEvent>(
-      'POST', `/v1/calendars/${calendarId}/events`, params, undefined, options,
+      'POST', apiPath`/v1/calendars/${calendarId}/events`, params, undefined, options,
     );
   }
 
   get(calendarId: string, eventId: string, options?: RequestOptions): APIPromise<CalendarEvent> {
     return this.client.request<CalendarEvent>(
-      'GET', `/v1/calendars/${calendarId}/events/${eventId}`, undefined, undefined, options,
+      'GET', apiPath`/v1/calendars/${calendarId}/events/${eventId}`, undefined, undefined, options,
     );
   }
 
   list(params: ListEventsParams = {}): PageIterator<CalendarEvent> {
     const { calendarId, agentId, limit = 50, offset = 0, ...filters } = params;
 
-    let path: string;
+    let path: ApiPath;
     if (agentId) {
-      path = `/v1/agents/${agentId}/events`;
+      path = apiPath`/v1/agents/${agentId}/events`;
     } else if (calendarId) {
-      path = `/v1/calendars/${calendarId}/events`;
+      path = apiPath`/v1/calendars/${calendarId}/events`;
     } else {
       throw new Error('Either calendarId or agentId is required for events.list()');
     }
@@ -72,7 +73,7 @@ export class EventsClient {
 
   update(calendarId: string, eventId: string, params: UpdateEventParams, options?: RequestOptions): APIPromise<CalendarEvent> {
     return this.client.request<CalendarEvent>(
-      'PATCH', `/v1/calendars/${calendarId}/events/${eventId}`, params, undefined, options,
+      'PATCH', apiPath`/v1/calendars/${calendarId}/events/${eventId}`, params, undefined, options,
     );
   }
 
@@ -88,7 +89,7 @@ export class EventsClient {
     const { occurrence_start, ...requestOptions } = options ?? {};
     return this.client.request<CalendarEvent | void>(
       'DELETE',
-      `/v1/calendars/${calendarId}/events/${eventId}`,
+      apiPath`/v1/calendars/${calendarId}/events/${eventId}`,
       undefined,
       occurrence_start !== undefined ? { occurrence_start } : undefined,
       requestOptions,
@@ -101,7 +102,7 @@ export class EventsClient {
    */
   getById(eventId: string, options?: RequestOptions): APIPromise<CalendarEvent> {
     return this.client.request<CalendarEvent>(
-      'GET', `/v1/events/${eventId}`, undefined, undefined, options,
+      'GET', apiPath`/v1/events/${eventId}`, undefined, undefined, options,
     );
   }
 
@@ -111,7 +112,7 @@ export class EventsClient {
    */
   updateById(eventId: string, params: UpdateEventParams, options?: RequestOptions): APIPromise<CalendarEvent> {
     return this.client.request<CalendarEvent>(
-      'PATCH', `/v1/events/${eventId}`, params, undefined, options,
+      'PATCH', apiPath`/v1/events/${eventId}`, params, undefined, options,
     );
   }
 
@@ -127,7 +128,7 @@ export class EventsClient {
     const { occurrence_start, ...requestOptions } = options ?? {};
     return this.client.request<CalendarEvent | void>(
       'DELETE',
-      `/v1/events/${eventId}`,
+      apiPath`/v1/events/${eventId}`,
       undefined,
       occurrence_start !== undefined ? { occurrence_start } : undefined,
       requestOptions,
@@ -140,7 +141,7 @@ export class EventsClient {
    */
   confirm(eventId: string, options?: RequestOptions): APIPromise<CalendarEvent> {
     return this.client.request<CalendarEvent>(
-      'PUT', `/v1/events/${eventId}/confirm`, undefined, undefined, options,
+      'PUT', apiPath`/v1/events/${eventId}/confirm`, undefined, undefined, options,
     );
   }
 
@@ -150,7 +151,7 @@ export class EventsClient {
    */
   release(eventId: string, options?: RequestOptions): APIPromise<CalendarEvent> {
     return this.client.request<CalendarEvent>(
-      'PUT', `/v1/events/${eventId}/release`, undefined, undefined, options,
+      'PUT', apiPath`/v1/events/${eventId}/release`, undefined, undefined, options,
     );
   }
 }

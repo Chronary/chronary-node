@@ -1,5 +1,6 @@
 import type { APIPromise } from '../api-promise';
 import type { CoreClient } from '../client';
+import { apiPath } from '../path';
 import { PageIterator } from '../pagination';
 import type {
   Agent,
@@ -22,7 +23,7 @@ export class AgentsClient {
   }
 
   get(id: string, options?: RequestOptions): APIPromise<Agent> {
-    return this.client.request<Agent>('GET', `/v1/agents/${id}`, undefined, undefined, options);
+    return this.client.request<Agent>('GET', apiPath`/v1/agents/${id}`, undefined, undefined, options);
   }
 
   list(params: ListAgentsParams = {}): PageIterator<Agent> {
@@ -40,10 +41,10 @@ export class AgentsClient {
   }
 
   update(id: string, params: UpdateAgentParams, options?: RequestOptions): APIPromise<Agent> {
-    return this.client.request<Agent>('PATCH', `/v1/agents/${id}`, params, undefined, options);
+    return this.client.request<Agent>('PATCH', apiPath`/v1/agents/${id}`, params, undefined, options);
   }
 
   delete(id: string, options?: RequestOptions): APIPromise<void> {
-    return this.client.request<void>('DELETE', `/v1/agents/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
+    return this.client.request<void>('DELETE', apiPath`/v1/agents/${id}`, undefined, undefined, options)._thenUnwrap(() => undefined);
   }
 }

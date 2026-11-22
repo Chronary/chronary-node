@@ -2,6 +2,10 @@
 
 All notable changes to `@chronary/sdk` will be documented in this file starting with the soft-launch release.
 
+## 0.13.2 — unreleased
+
+- **Path parameters are encoded (#2519).** Every ID (and booking slug) a method puts into the URL path is now percent-encoded as one segment, so a value such as `../agents/agt_1`, `whk_1#` or `evt_1?expand=all` can no longer turn `events.deleteById()` or `events.getById()` into a call on another resource or add a query string. `""`, `"."` and `".."` are refused before any request is sent: the returned promise rejects with a `ValidationError` (status `0`). Real Chronary IDs are unaffected. New export `encodePathSegment()` for code that builds its own paths for `CoreClient.request()`. `request()` also accepts the internal `ApiPath` the resource methods use, exported as a type only; its `apiPath` builder stays internal and is not part of the public API.
+
 ## 0.13.1 — unreleased
 
 - `scheduling.respond()` returns `RespondToProposalResult`: the saved response plus `auto_resolved` (`confirmed` / `cancelled` / `null`) and `auto_resolve_error` (`null` or `{ code, message }`). When the last response's auto-resolve fails, the API now answers 200 with `auto_resolve_error` instead of an error status, because the response was saved; `message` says what to do next (usually `scheduling.resolve(id)`). Don't respond again. New types `RespondToProposalResult`, `AutoResolveError` and `AutoResolveErrorCode` (#2540).
