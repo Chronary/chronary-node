@@ -55,7 +55,8 @@ export class ICalSubscriptionsClient {
    * Start an immediate fetch of the feed. Resolves with `{ status: 'syncing' }`
    * as soon as the fetch has started; read the subscription a few seconds later
    * for `last_synced_at` / `last_error`. A paused feed rejects with 409, and a
-   * second sync of the same feed within a minute rejects with 429.
+   * second sync of the same feed during its cooldown (1 minute; 15 minutes on
+   * Free) rejects with 429. A remaining cooldown over 60 seconds is not retried.
    */
   sync(id: string, options?: RequestOptions): APIPromise<{ status: string }> {
     return this.client.request<{ status: string }>(

@@ -131,10 +131,11 @@ export class WebhooksClient {
 
   /**
    * Rotate the endpoint's signing secret (Developer or Pro). The new secret is returned
-   * once and signs `X-Signature` from the next attempt. The replaced secret
-   * keeps signing `X-Signature-Previous` until `expire_old_in` has passed
-   * (default `24h`; `now` drops it at once), so receivers can switch
-   * without rejecting deliveries. `verifySignature` accepts either header.
+   * once and signs `X-Signature-V2` (and v1 `X-Signature`) from the next
+   * attempt. The replaced secret keeps signing `X-Signature-V2-Previous` (and
+   * `X-Signature-Previous`) until `expire_old_in` has passed (default `24h`;
+   * `now` drops it at once), so receivers can switch without rejecting
+   * deliveries. `verifySignature` accepts a match on either v2 header.
    */
   rotateSecret(
     webhookId: string,

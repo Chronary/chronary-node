@@ -61,6 +61,11 @@ export class AgentAuthClient {
    *   budget; (503 `anonymous_signup_disabled`, `signups_paused`,
    *   `anonymous_signup_capacity` or `temporarily_disabled`) when this
    *   sign-up is unavailable.
+   *
+   * Sent once, without retries, unless `options.maxRetries` says otherwise:
+   * the server does not dedupe this POST, so a retry after a lost response
+   * (a 5xx or a connection reset after the org was created) would create a
+   * second claimable org (#2690).
    */
   signUpAnonymous(
     params: AgentSignUpAnonymousParams,
@@ -71,7 +76,7 @@ export class AgentAuthClient {
       '/v1/agent/sign-up/anonymous',
       params,
       undefined,
-      options,
+      { ...options, maxRetries: options?.maxRetries ?? 0 },
     );
   }
 

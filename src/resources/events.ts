@@ -31,6 +31,12 @@ export class EventsClient {
   list(params: ListEventsParams = {}): PageIterator<CalendarEvent> {
     const { calendarId, agentId, limit = 50, offset = 0, ...filters } = params;
 
+    // Both IDs used to send the request to the agent and drop the calendar
+    // without a word (#2721). Refuse the pair: pick one.
+    if (agentId && calendarId) {
+      throw new Error('Pass either calendarId or agentId to events.list(), not both');
+    }
+
     let path: ApiPath;
     if (agentId) {
       path = apiPath`/v1/agents/${agentId}/events`;
@@ -60,11 +66,12 @@ export class EventsClient {
   listAll(params: ListOrgEventsParams = {}): PageIterator<CalendarEvent> {
     const { limit = 50, offset = 0, ...filters } = params;
     return new PageIterator<CalendarEvent>(
-      (offset, l) =>
+      (offset, l, cursor) =>
         this.client.request<PageResponse<CalendarEvent>>('GET', '/v1/events', undefined, {
           ...filters,
           limit: l,
           offset,
+          ...(cursor ? { cursor } : {}),
         }),
       limit,
       offset,

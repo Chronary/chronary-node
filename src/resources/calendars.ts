@@ -31,11 +31,12 @@ export class CalendarsClient {
     const { agentId, limit = 50, offset = 0, ...filters } = params;
     const path = agentId ? apiPath`/v1/agents/${agentId}/calendars` : '/v1/calendars';
     return new PageIterator<Calendar>(
-      (offset, l) =>
+      (offset, l, cursor) =>
         this.client.request<PageResponse<Calendar>>('GET', path, undefined, {
           ...filters,
           limit: l,
           offset,
+          ...(cursor ? { cursor } : {}),
         }),
       limit,
       offset,

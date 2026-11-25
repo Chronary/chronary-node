@@ -29,11 +29,12 @@ export class AgentsClient {
   list(params: ListAgentsParams = {}): PageIterator<Agent> {
     const { limit = 50, offset = 0, ...filters } = params;
     return new PageIterator<Agent>(
-      (offset, l) =>
+      (offset, l, cursor) =>
         this.client.request<PageResponse<Agent>>('GET', '/v1/agents', undefined, {
           ...filters,
           limit: l,
           offset,
+          ...(cursor ? { cursor } : {}),
         }),
       limit,
       offset,

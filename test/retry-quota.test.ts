@@ -56,7 +56,9 @@ describe('quota_exceeded is not retried', () => {
     expect(retryDelays(spy, 31_000)).toEqual([2_000]);
   });
 
-  it('clamps a Retry-After above 60 seconds to 60 seconds', async () => {
+  // #2558: a Retry-After above the 60 s cap is not clamped and retried (that
+  // slept 60 s per attempt and then failed anyway); the error surfaces at once.
+  it('does not retry a Retry-After above 60 seconds', async () => {
     vi.useFakeTimers();
     const spy = vi.spyOn(globalThis, 'setTimeout');
     const fetch = mockFetch([
@@ -65,10 +67,14 @@ describe('quota_exceeded is not retried', () => {
     ]);
     const client = new CoreClient({ ...clientConfig(fetch), maxRetries: 1, timeout: 31_000 });
 
-    const pending = client.request<{ ok: boolean }>('GET', '/v1/agents');
+    const settled = client.request<{ ok: boolean }>('GET', '/v1/agents').then(
+      () => null,
+      (e: unknown) => e,
+    );
     await vi.advanceTimersByTimeAsync(60_000);
-    await expect(pending).resolves.toEqual({ ok: true });
-    expect(retryDelays(spy, 31_000)).toEqual([60_000]);
+    expect(await settled).toBeInstanceOf(RateLimitError);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(retryDelays(spy, 31_000)).toEqual([]);
   });
 
   it('a rate-limit 429 on the last attempt is a RateLimitError', async () => {

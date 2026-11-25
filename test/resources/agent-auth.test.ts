@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Chronary, isAgentSignUpNewOrg } from '../../src/index';
-import { ChronaryError } from '../../src/error';
+import { ChronaryError, ConnectionError } from '../../src/error';
 import { mockFetch, clientConfig } from '../helpers';
 
 const NEW_ORG_RESPONSE = {
@@ -155,6 +155,46 @@ describe('AgentAuthClient', () => {
       ]);
       const client = new Chronary(clientConfig(fetch));
       await expect(client.agentAuth.signUpAnonymous({ agent_name: 'P', tos_version: 'v' })).rejects.toBeInstanceOf(ChronaryError);
+    });
+
+    // #2690: the server does not dedupe this POST, so a retry after a lost
+    // response creates a second claimable org. It is sent once, even on a
+    // client whose default maxRetries is 2.
+    it('does not retry a 500 (sends exactly one request)', async () => {
+      const fetch = mockFetch([
+        { status: 500, body: { error: { type: 'api_error', message: 'x', request_id: 'req_1' } } },
+        { status: 201, body: ANON_RESPONSE },
+      ]);
+      const client = new Chronary({ baseUrl: 'https://api.test.chronary.ai', fetch });
+      await expect(client.agentAuth.signUpAnonymous({ agent_name: 'P', tos_version: 'v' })).rejects.toBeInstanceOf(ChronaryError);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not retry a connection reset (sends exactly one request)', async () => {
+      const fetch = vi.fn(async () => {
+        if (fetch.mock.calls.length === 1) throw new TypeError('fetch failed: ECONNRESET');
+        return new Response(JSON.stringify(ANON_RESPONSE), { status: 201 });
+      });
+      const client = new Chronary({ baseUrl: 'https://api.test.chronary.ai', fetch });
+      await expect(client.agentAuth.signUpAnonymous({ agent_name: 'P', tos_version: 'v' })).rejects.toBeInstanceOf(ConnectionError);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries when the caller opts in with maxRetries', async () => {
+      const fetch = mockFetch([
+        { status: 503, body: { error: { type: 'temporarily_disabled', message: 'x', request_id: 'req_1' } } },
+        { status: 201, body: ANON_RESPONSE },
+      ]);
+      const client = new Chronary({ baseUrl: 'https://api.test.chronary.ai', fetch });
+      vi.useFakeTimers();
+      try {
+        const p = client.agentAuth.signUpAnonymous({ agent_name: 'P', tos_version: 'v' }, { maxRetries: 1 });
+        await vi.runAllTimersAsync();
+        await expect(p).resolves.toEqual(ANON_RESPONSE);
+      } finally {
+        vi.useRealTimers();
+      }
+      expect(fetch).toHaveBeenCalledTimes(2);
     });
   });
 

@@ -92,6 +92,15 @@ describe('EventsClient', () => {
     expect(() => client.events.list({})).toThrow('Either calendarId or agentId is required');
   });
 
+  it('list refuses calendarId and agentId together instead of dropping the calendar (#2721)', () => {
+    const fetch = mockFetch([]);
+    const client = new Chronary(clientConfig(fetch));
+
+    expect(() => client.events.list({ calendarId: 'cal_abc123', agentId: 'agt_abc123' }))
+      .toThrow('not both');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('update', async () => {
     const fetch = mockFetch([{ status: 200, body: { ...EVENT, title: 'Renamed' } }]);
     const client = new Chronary(clientConfig(fetch));

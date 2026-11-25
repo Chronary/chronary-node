@@ -142,9 +142,10 @@ export class CoreClient {
     }
 
     const requestTimeout = options?.timeout ?? this.timeout;
+    const maxRetries = options?.maxRetries === undefined ? this.maxRetries : normaliseRetries(options.maxRetries);
     let lastError: Error | undefined;
 
-    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) {
         const delay = this.retryDelay(attempt, lastError);
         this.log('info', `Retry #${attempt} after ${delay}ms`);
@@ -195,10 +196,16 @@ export class CoreClient {
         // Retryable? A monthly plan limit (429 `quota_exceeded`) never is: its
         // Retry-After is the seconds left in the month, and asking again
         // cannot succeed until the limit resets or the plan changes (#1936).
+        // Nor is any refusal whose Retry-After is beyond the 60 s retry cap
+        // (an iCal sync cooldown, a daily sign-up cap): a retry inside the
+        // window cannot succeed, so sleeping first only delays the same error
+        // (#2558).
+        const retryAfterMs = retryAfterMillis(response.headers);
         if (
           RETRYABLE_STATUS_CODES.has(response.status) &&
-          attempt < this.maxRetries &&
-          !(error instanceof QuotaExceededError)
+          attempt < maxRetries &&
+          !(error instanceof QuotaExceededError) &&
+          !(retryAfterMs !== undefined && retryAfterMs > MAX_RETRY_DELAY)
         ) {
           lastError = error;
           continue;
@@ -216,7 +223,7 @@ export class CoreClient {
           throw new TimeoutError(`Request timed out after ${requestTimeout}ms`);
         }
 
-        if (attempt < this.maxRetries) {
+        if (attempt < maxRetries) {
           lastError = err as Error;
           continue;
         }
@@ -289,9 +296,11 @@ export class CoreClient {
   }
 
   private retryDelay(attempt: number, lastError?: Error): number {
-    // Respect Retry-After header
-    if (lastError instanceof RateLimitError && lastError.retryAfter) {
-      return Math.min(lastError.retryAfter * 1000, MAX_RETRY_DELAY);
+    // Respect a Retry-After header on any retryable refusal (429 or 503). One
+    // above MAX_RETRY_DELAY never gets here: the request loop does not retry it.
+    const retryAfterMs = lastError instanceof ChronaryError ? retryAfterMillis(lastError.headers) : undefined;
+    if (retryAfterMs !== undefined) {
+      return Math.min(retryAfterMs, MAX_RETRY_DELAY);
     }
 
     // Exponential backoff with jitter: base * 2^attempt + random jitter
@@ -300,6 +309,33 @@ export class CoreClient {
     const jitter = Math.random() * base;
     return Math.min(exponential + jitter, MAX_RETRY_DELAY);
   }
+}
+
+/**
+ * A per-call `maxRetries` that is negative, fractional, NaN or infinite must
+ * neither skip the request (the loop runs `maxRetries + 1` times) nor loop
+ * forever: negative and non-finite become 0, fractions round down.
+ */
+function normaliseRetries(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+/** An HTTP date in IMF-fixdate form, e.g. `Sun, 06 Nov 1994 08:49:37 GMT`. */
+const IMF_FIXDATE = /^[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT$/;
+
+/**
+ * The server's `Retry-After` in milliseconds: delta-seconds or an HTTP date
+ * (IMF-fixdate only: V8's loose `Date.parse` reads values such as `1.5` or
+ * `-1` as dates). `undefined` when the header is missing or neither form, so
+ * the caller falls back to backoff.
+ */
+function retryAfterMillis(headers: Headers | undefined): number | undefined {
+  const raw = headers?.get('retry-after')?.trim();
+  if (!raw) return undefined;
+  if (/^\d+$/.test(raw)) return Number(raw) * 1000;
+  if (!IMF_FIXDATE.test(raw)) return undefined;
+  const at = Date.parse(raw);
+  return Number.isNaN(at) ? undefined : Math.max(0, at - Date.now());
 }
 
 function sleep(ms: number): Promise<void> {

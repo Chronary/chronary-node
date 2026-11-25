@@ -28,6 +28,8 @@ export interface RequestOptions {
   signal?: AbortSignal;
   timeout?: number;
   idempotencyKey?: string;
+  /** Overrides the client's `maxRetries` for this call. */
+  maxRetries?: number;
 }
 
 // ── Pagination ──────────────────────────────────────────────────
@@ -37,6 +39,12 @@ export interface PageResponse<T> {
   total: number;
   limit: number;
   offset: number;
+  /**
+   * On lists that have cursors (agents, calendars, the org-wide events list):
+   * pass as `cursor` for the next page; null on the last page. Absent on
+   * lists that page by offset only.
+   */
+  next_cursor?: string | null;
 }
 
 export interface Page<T> {
@@ -44,6 +52,8 @@ export interface Page<T> {
   total: number;
   limit: number;
   offset: number;
+  /** See {@link PageResponse.next_cursor}. */
+  next_cursor?: string | null;
   hasMore: boolean;
 }
 
@@ -104,7 +114,12 @@ export interface ListAgentsParams {
   include_counts?: boolean;
   limit?: number;
   /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
-  offset?: number;
+  offset?: number;  /**
+   * The `next_cursor` from a previous page: start the list there. Cannot be
+   * combined with a non-zero `offset`. Iterating the list follows
+   * `next_cursor` by itself, so it is not limited by the offset cap.
+   */
+  cursor?: string;
 }
 
 // ── Calendars ───────────────────────────────────────────────────
@@ -152,7 +167,12 @@ export interface ListCalendarsParams {
   q?: string;
   limit?: number;
   /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
-  offset?: number;
+  offset?: number;  /**
+   * The `next_cursor` from a previous page: start the list there. Cannot be
+   * combined with a non-zero `offset`. Iterating the list follows
+   * `next_cursor` by itself, so it is not limited by the offset cap.
+   */
+  cursor?: string;
 }
 
 // ── Booking pages ───────────────────────────────────────────────
@@ -398,7 +418,9 @@ export interface UpdateEventParams {
 }
 
 export interface ListEventsParams {
+  /** List one calendar's events. Pass this or `agentId`, not both. */
   calendarId?: string;
+  /** List events across all of the agent's calendars. Pass this or `calendarId`, not both. */
   agentId?: string;
   start_after?: string;
   start_before?: string;
@@ -438,6 +460,12 @@ export interface ListOrgEventsParams {
   limit?: number;
   /** Rows to skip, at most 10000; page deeper with `cursor` where the list has it. */
   offset?: number;
+  /**
+   * The `next_cursor` from a previous page: start the list there. Cannot be
+   * combined with a non-zero `offset`. Iterating the list follows
+   * `next_cursor` by itself, so it is not limited by the offset cap.
+   */
+  cursor?: string;
 }
 
 /** Options for event delete calls — `RequestOptions` plus recurrence controls. */
@@ -597,7 +625,8 @@ export interface Webhook {
   deactivatedReason?: WebhookDeactivatedReason | null;
   /**
    * While a secret rotation's grace window is open, when the replaced secret
-   * stops working; deliveries until then also carry `X-Signature-Previous`.
+   * stops working; deliveries until then also carry `X-Signature-V2-Previous`
+   * (and the deprecated v1 `X-Signature-Previous`).
    * Null when no window is open.
    */
   previousSecretExpiresAt?: string | null;
@@ -620,7 +649,7 @@ export interface SendTestWebhookParams {
 export type WebhookSecretExpiry = 'now' | '1h' | '24h' | '7d';
 
 export interface RotateWebhookSecretParams {
-  /** When the old secret stops signing `X-Signature-Previous`. Default `24h`, at most `7d`. */
+  /** When the old secret stops signing `X-Signature-V2-Previous` (and v1 `X-Signature-Previous`). Default `24h`, at most `7d`. */
   expire_old_in?: WebhookSecretExpiry;
 }
 
@@ -1415,9 +1444,21 @@ export type WebhookEventType =
   | 'calendar_connection.reauthorization_required'
   | 'usage.threshold_crossed';
 
+/**
+ * A verified delivery from `constructEvent`. Every field is covered by the
+ * delivery's `X-Signature-V2`, so it can be trusted once verification passed.
+ */
 export interface WebhookEvent {
+  /** `X-Chronary-Event-Type`. */
   type: WebhookEventType;
+  /** The parsed raw body. */
   data: Record<string, unknown>;
+  /** `X-Delivery-Id` (`whd_...`): the same on every retry, so deduplicate on it. */
+  deliveryId: string;
+  /** True for a test send (`X-Chronary-Test: 1`). */
+  test: boolean;
+  /** `X-Chronary-Replay-Of` on a replay: the original delivery's id. Null otherwise. */
+  replayOf: string | null;
 }
 
 export interface VerifyOptions {

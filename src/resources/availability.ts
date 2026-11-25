@@ -51,7 +51,8 @@ export class AvailabilityClient {
         end: params.end,
         duration: params.duration,
         slot_duration: params.slot_duration,
-        calendars: params.calendars?.join(','),
+        // An empty list is omitted: `calendars=` fails the API's "no empty ids" check (#2557).
+        calendars: params.calendars?.length ? params.calendars.join(',') : undefined,
         include_busy: params.include_busy,
         allow_stale: params.allow_stale,
       },

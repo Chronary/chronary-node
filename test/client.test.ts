@@ -231,6 +231,42 @@ describe('CoreClient', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  describe('per-call maxRetries (#2690)', () => {
+    const fail500 = { status: 500, body: { error: { type: 'internal_error', message: 'x', request_id: 'req_1' } } };
+
+    it('overrides the client value for one call', async () => {
+      const fetch = mockFetch([fail500, fail500, fail500]);
+      const client = new CoreClient({ ...clientConfig(fetch), maxRetries: 2 });
+      await expect(client.request('GET', '/v1/agents', undefined, undefined, { maxRetries: 0 })).rejects.toBeInstanceOf(ChronaryError);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      ['-1', -1],
+      ['NaN', Number.NaN],
+      ['Infinity', Number.POSITIVE_INFINITY],
+    ])('treats %s as 0: the request is still sent, once', async (_label, value) => {
+      const fetch = mockFetch([fail500, { status: 200, body: { ok: true } }]);
+      const client = new CoreClient({ ...clientConfig(fetch), maxRetries: 2 });
+      await expect(client.request('GET', '/v1/agents', undefined, undefined, { maxRetries: value })).rejects.toBeInstanceOf(ChronaryError);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('rounds a fractional value down', async () => {
+      const fetch = mockFetch([fail500, { status: 200, body: { ok: true } }]);
+      const client = new CoreClient({ ...clientConfig(fetch), maxRetries: 0 });
+      vi.useFakeTimers();
+      try {
+        const p = client.request<{ ok: boolean }>('GET', '/v1/agents', undefined, undefined, { maxRetries: 1.7 });
+        await vi.runAllTimersAsync();
+        await expect(p).resolves.toEqual({ ok: true });
+      } finally {
+        vi.useRealTimers();
+      }
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it('retries on 429 then succeeds', async () => {
     const fetch = mockFetch([
       { status: 429, body: { error: { type: 'rate_limit_error', message: 'Slow down', request_id: 'req_1' } }, headers: { 'retry-after': '0' } },

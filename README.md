@@ -82,6 +82,10 @@ Paid-plan feature calls return `403` with an upgrade hint on Free. See the full 
 
 Every single-request method returns an `APIPromise`: `await` it for the data, or call `.withResponse()` to also get the status, headers and parsed quota headers. The auto-paginating `list()` helpers return a `PageIterator` instead.
 
+`agents.list()`, `calendars.list()` and `events.listAll()` page by cursor: `for await` follows `next_cursor`, so it is not limited by the API's 10,000-row cap on `offset`. For manual paging, pass a page's `next_cursor` to `getPage(0, limit, cursor)` or as `cursor` in the list params. Other lists page by offset.
+
+Retries (`maxRetries`, default 2) cover `408`, `429` and `5xx`, except a monthly quota error (`quota_exceeded`) and any refusal whose `Retry-After` is longer than 60 seconds (an iCal sync cooldown, a daily sign-up cap): those reject at once.
+
 ```ts
 const { data: agent, response } = await client.agents.get('agt_1').withResponse();
 console.log(response.headers.get('x-request-id'));
@@ -94,8 +98,11 @@ console.log(response.quota?.remaining, response.quota?.resetAt);
 import { Chronary } from '@chronary/sdk';
 
 const event = await Chronary.webhooks.constructEvent(rawBody, headers, secret);
-// event.type comes from X-Chronary-Event-Type; event.data is the parsed payload body.
+// event.type, event.deliveryId, event.test and event.replayOf come from headers
+// covered by X-Signature-V2; event.data is the parsed payload body.
 ```
+
+Verification checks `X-Signature-V2`, which covers the body, `X-Timestamp`, `X-Delivery-Id`, `X-Chronary-Event-Type`, `X-Chronary-Test` and `X-Chronary-Replay-Of`. The deprecated v1 `X-Signature` is not accepted. Deduplicate on `event.deliveryId`: retries reuse it.
 
 ## Security and support
 
