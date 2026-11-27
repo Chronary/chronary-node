@@ -94,6 +94,24 @@ describe('Error hierarchy', () => {
     expect(err.body).toBe(body);
   });
 
+  it('ChronaryError exposes code and conflictingEventIds from a 409 event_conflict body', () => {
+    const body = {
+      type: 'conflict', code: 'event_conflict', message: 'overlap',
+      conflicting_event_ids: ['evt_1', 'evt_2'], request_id: 'req_9',
+    };
+    const err = new ChronaryError('overlap', 409, 'req_9', undefined, 'conflict', body);
+    expect(err.code).toBe('event_conflict');
+    expect(err.conflictingEventIds).toEqual(['evt_1', 'evt_2']);
+  });
+
+  it('ChronaryError defaults code to undefined and conflictingEventIds to []', () => {
+    const err = new ChronaryError('nope', 404, 'req_1', undefined, 'not_found', { type: 'not_found' });
+    expect(err.code).toBeUndefined();
+    expect(err.conflictingEventIds).toEqual([]);
+    const bad = new ChronaryError('x', 409, undefined, undefined, 'conflict', { conflicting_event_ids: 'evt_1' });
+    expect(bad.conflictingEventIds).toEqual([]);
+  });
+
   it('TimeoutError has status 0', () => {
     const err = new TimeoutError('Timed out');
     expect(err.status).toBe(0);

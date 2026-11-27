@@ -43,6 +43,39 @@ describe('AgentAuthClient', () => {
       });
     });
 
+    it('sends the optional heard_about text when given (#2651)', async () => {
+      const fetch = mockFetch([{ status: 200, body: NEW_ORG_RESPONSE }]);
+      const client = new Chronary(clientConfig(fetch));
+
+      await client.agentAuth.signUp({
+        email: 'alice@example.com',
+        agent_name: 'Alice Bot',
+        tos_version: '2026-04-17',
+        heard_about: 'My user found you in a search',
+      });
+
+      const [, init] = fetch.mock.calls[0];
+      expect(JSON.parse(init?.body as string)).toMatchObject({ heard_about: 'My user found you in a search' });
+    });
+
+    it('cuts heard_about to 200 characters before sending, keeping an emoji whole (#2651)', async () => {
+      const fetch = mockFetch([{ status: 200, body: NEW_ORG_RESPONSE }]);
+      const client = new Chronary(clientConfig(fetch));
+      const params = {
+        email: 'alice@example.com',
+        agent_name: 'Alice Bot',
+        tos_version: '2026-04-17',
+        heard_about: `${'a'.repeat(199)}\u{1F4C5}${'b'.repeat(100)}`,
+      };
+
+      await client.agentAuth.signUp(params);
+
+      const [, init] = fetch.mock.calls[0];
+      expect(JSON.parse(init?.body as string).heard_about).toBe(`${'a'.repeat(199)}\u{1F4C5}`);
+      // The caller's object is not changed.
+      expect(params.heard_about).toHaveLength(199 + 2 + 100);
+    });
+
     it('returns the opaque response on existing-org dedup', async () => {
       const fetch = mockFetch([{ status: 200, body: EXISTING_ORG_RESPONSE }]);
       const client = new Chronary(clientConfig(fetch));

@@ -26,6 +26,10 @@ export class ChronaryError extends Error {
   /** Quota metric that was exhausted (quota_exceeded errors). */
   readonly metric: string | undefined;
   readonly limit: number | undefined;
+  /** The specific reason on some errors, e.g. `event_conflict` on a 409 from a calendar that refuses overlapping events. */
+  readonly code: string | undefined;
+  /** The events in the way (409 `event_conflict`, `calendar_has_overlaps`, `calendar_has_recurring_series`); empty when the body has none. */
+  readonly conflictingEventIds: string[];
 
   constructor(
     message: string,
@@ -50,6 +54,9 @@ export class ChronaryError extends Error {
     this.contactUrl = str(body, 'contact_url');
     this.metric = str(body, 'metric');
     this.limit = num(body, 'limit');
+    this.code = str(body, 'code');
+    const ids = body?.['conflicting_event_ids'];
+    this.conflictingEventIds = Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : [];
   }
 }
 

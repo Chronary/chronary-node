@@ -11,6 +11,9 @@ import type {
   RequestOptions,
 } from '../types';
 
+/** Longest `heard_about` the API keeps (#2651); longer text is cut before sending. */
+const HEARD_ABOUT_MAX_CHARS = 200;
+
 export class AgentAuthClient {
   constructor(private readonly client: CoreClient) {}
 
@@ -37,10 +40,16 @@ export class AgentAuthClient {
     params: AgentSignUpParams,
     options?: RequestOptions,
   ): APIPromise<AgentSignUpResponse> {
+    // `heard_about` is informational: cut to 200 characters (code points) so
+    // a long answer never costs the sign-up (#2651).
+    const body =
+      typeof params.heard_about === 'string'
+        ? { ...params, heard_about: Array.from(params.heard_about).slice(0, HEARD_ABOUT_MAX_CHARS).join('') }
+        : params;
     return this.client.request<AgentSignUpResponse>(
       'POST',
       '/v1/agent/sign-up',
-      params,
+      body,
       undefined,
       options,
     );

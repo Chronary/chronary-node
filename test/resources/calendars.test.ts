@@ -13,6 +13,8 @@ const CALENDAR = {
   ical_url: 'https://api.chronary.ai/ical/token123.ics',
   externalId: null,
   provider: null,
+  default_reminders: null,
+  prevent_overlaps: false,
   deletedAt: null,
   createdAt: '2026-04-01T00:00:00Z',
   updatedAt: '2026-04-01T00:00:00Z',
@@ -74,6 +76,43 @@ describe('CalendarsClient', () => {
 
     const result = await client.calendars.update('cal_abc123', { name: 'Renamed' });
     expect(result.name).toBe('Renamed');
+  });
+
+  it('create sends prevent_overlaps and returns it', async () => {
+    const fetch = mockFetch([{ status: 201, body: { ...CALENDAR, prevent_overlaps: true } }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    const cal = await client.calendars.create({ name: 'Desk', timezone: 'UTC', prevent_overlaps: true });
+    expect(JSON.parse(fetch.mock.calls[0][1]?.body as string)).toMatchObject({ prevent_overlaps: true });
+    expect(cal.prevent_overlaps).toBe(true);
+  });
+
+  it('update sends prevent_overlaps only when given', async () => {
+    const fetch = mockFetch([
+      { status: 200, body: CALENDAR },
+      { status: 200, body: CALENDAR },
+    ]);
+    const client = new Chronary(clientConfig(fetch));
+
+    await client.calendars.update('cal_abc123', { prevent_overlaps: false });
+    await client.calendars.update('cal_abc123', { name: 'Renamed' });
+    expect(JSON.parse(fetch.mock.calls[0][1]?.body as string)).toEqual({ prevent_overlaps: false });
+    expect(JSON.parse(fetch.mock.calls[1][1]?.body as string)).not.toHaveProperty('prevent_overlaps');
+  });
+
+  it('a refused enable surfaces code and conflictingEventIds', async () => {
+    const fetch = mockFetch([{
+      status: 409,
+      body: { error: { type: 'conflict', code: 'calendar_has_overlaps', message: 'overlaps', conflicting_event_ids: ['evt_1'], request_id: 'req_1' } },
+    }]);
+    const client = new Chronary(clientConfig(fetch));
+
+    await expect(client.calendars.update('cal_abc123', { prevent_overlaps: true })).rejects.toMatchObject({
+      status: 409,
+      errorType: 'conflict',
+      code: 'calendar_has_overlaps',
+      conflictingEventIds: ['evt_1'],
+    });
   });
 
   it('delete', async () => {

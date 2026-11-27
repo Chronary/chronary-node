@@ -64,6 +64,10 @@ export interface ApiErrorBody {
     type: string;
     message: string;
     request_id: string;
+    /** The specific reason on some errors, e.g. `event_conflict` on a 409. */
+    code?: string;
+    /** The events in the way (`event_conflict`, `calendar_has_overlaps`, `calendar_has_recurring_series`). */
+    conflicting_event_ids?: string[];
     [key: string]: unknown;
   };
 }
@@ -138,6 +142,12 @@ export interface Calendar {
   provider: string | null;
   /** Default reminder offsets (minutes before start) inherited by events that don't set their own. null = system default (10 min); [] = no reminders. */
   default_reminders: number[] | null;
+  /**
+   * Double-booking guarantee (snake_case wire key). When true, the calendar
+   * refuses any create, reschedule, reactivation or hold confirm that would
+   * overlap an active event on it (409 `conflict`, `code: 'event_conflict'`).
+   */
+  prevent_overlaps: boolean;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -149,6 +159,8 @@ export interface CreateCalendarParams {
   agent_status?: 'idle' | 'working' | 'waiting' | 'error';
   /** Default reminder offsets (minutes before start) for events on this calendar. null/omit = system default (10 min); [] = no reminders. */
   default_reminders?: number[] | null;
+  /** true: the calendar refuses any event that would overlap an active event on it. Default false. */
+  prevent_overlaps?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -157,6 +169,12 @@ export interface UpdateCalendarParams {
   timezone?: string;
   agent_status?: 'idle' | 'working' | 'waiting' | 'error';
   default_reminders?: number[] | null;
+  /**
+   * Turn the double-booking guarantee on or off. Turning it on is refused
+   * (409, `code: 'calendar_has_overlaps'` or `'calendar_has_recurring_series'`)
+   * while the calendar holds overlapping active events or a running recurring series.
+   */
+  prevent_overlaps?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -1276,6 +1294,11 @@ export interface AgentSignUpParams {
   agent_name: string;
   /** Exact ToS version string the caller has accepted. */
   tos_version: string;
+  /**
+   * Optional: how you (or your user) found Chronary, in plain text, at most
+   * 200 characters. Stored for a new organization only; never returned.
+   */
+  heard_about?: string;
 }
 
 /**
